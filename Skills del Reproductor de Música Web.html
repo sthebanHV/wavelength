@@ -1,0 +1,1856 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}</style><style>:root{color-scheme:light dark;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}}:root[data-theme="dark"]{color-scheme:dark;--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}:root[data-theme="light"]{color-scheme:light}@media print{:root,:root[data-theme="dark"]{color-scheme:light;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}}body{background:var(--md-bg);color:var(--md-text);max-width:720px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:10px;font:14px/1.55 -apple-system,BlinkMacSystemFont,'SF Pro','Segoe UI',sans-serif;overflow-wrap:break-word}body>:first-child{margin-top:0}h1,h2,h3,h4,h5,h6{margin:6px 0 0;line-height:1.25;font-weight:600;text-wrap:balance}h1{font-size:1.35em}h2{font-size:1.15em;color:var(--md-muted)}h3,h4,h5,h6{font-size:1em}p,ul,ol,blockquote,table,pre,hr{margin:0}strong{font-weight:600}a{color:var(--md-link);text-decoration:none}a:hover{text-decoration:underline}ul,ol{display:flex;flex-direction:column;gap:6px;padding-left:22px}ul{list-style:disc}ol{list-style:decimal}:is(li,td,th)>*+:is(p,ul,ol,blockquote){margin-top:6px}blockquote{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--md-rule);padding-left:10px;color:var(--md-muted)}:not(pre)>code{background:var(--md-fill);padding:1px 3px;border-radius:4px;font:.92em 'SF Mono',ui-monospace,Menlo,Consolas,monospace}a>code{background:none;color:inherit}pre{background:var(--md-fill);padding:10px 12px;border-radius:6px;overflow-x:auto;font:12px/1.5 'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin-block:4px}pre code{background:none;padding:0;font:inherit}table{width:100%;border-collapse:separate;border-spacing:2px;font:inherit}th,td{padding:6px 8px;border-radius:3px;text-align:left;vertical-align:top}th{background:var(--md-fill-strong);font-weight:600}td{background:var(--md-fill)}:is(th,td) :not(pre)>code{background:transparent}hr{border:0;border-top:1px solid var(--md-rule-strong);margin-block:10px}img{max-width:100%;height:auto;border-radius:4px}</style>
+</head><body>
+<h1>Skills del Reproductor de Música Web — &quot;Wavelength&quot; (nombre de trabajo)</h1>
+<blockquote>
+<p>Especificación modular para un proyecto de Ingeniería de Software. Cada Skill es un módulo independiente con contrato público (API, eventos y estado) y puede implementarse, probarse y desplegarse por separado.</p>
+</blockquote>
+<hr>
+<h2>0. Convenciones globales</h2>
+<p><strong>Stack de referencia (sustituible):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Capa</th>
+<th>Tecnología sugerida</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frontend</td>
+<td>React 18 + TypeScript, Vite, React Router</td>
+</tr>
+<tr>
+<td>Estado cliente</td>
+<td>Zustand (player, cola, UI)</td>
+</tr>
+<tr>
+<td>Estado servidor</td>
+<td>TanStack Query (cache, invalidación, paginación)</td>
+</tr>
+<tr>
+<td>Estilos</td>
+<td>Tailwind + tokens CSS (dark/light)</td>
+</tr>
+<tr>
+<td>Listas largas</td>
+<td>TanStack Virtual</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td>Node.js + NestJS (o Express) con módulos por Skill</td>
+</tr>
+<tr>
+<td>Base de datos</td>
+<td>PostgreSQL 16 (+ <code>pg_trgm</code>, <code>unaccent</code>)</td>
+</tr>
+<tr>
+<td>Caché / rate limit</td>
+<td>Redis</td>
+</tr>
+<tr>
+<td>Búsqueda avanzada (V2)</td>
+<td>Meilisearch u OpenSearch</td>
+</tr>
+<tr>
+<td>Archivos</td>
+<td>S3 compatible + CDN, URLs firmadas</td>
+</tr>
+<tr>
+<td>Audio</td>
+<td>HTML5 <code>&lt;audio&gt;</code> + HLS (hls.js) para streaming adaptativo</td>
+</tr>
+<tr>
+<td>Tests</td>
+<td>Vitest, Testing Library, Playwright, Supertest</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Estructura de carpetas (por Skill, &quot;feature-sliced&quot;):</strong></p>
+<pre><code>src/
+  app/                  # bootstrap, router, providers
+  ui/                   # design system: Button, Modal, Toast, Skeleton, Slider
+  components/           # componentes compartidos (TrackRow, AlbumCard, ArtistCard)
+  features/
+    player/  search/  lyrics/  playlists/  artist/  timeline/  album/
+    library/  favorites/  history/  recommendations/  queue/  discovery/
+      ├── ui/           # componentes de la feature
+      ├── hooks/
+      ├── store/        # slice de estado
+      ├── services/     # lógica de aplicación
+      └── api/          # cliente HTTP de la feature
+  domain/               # entidades, value objects, reglas puras (sin React ni HTTP)
+  services/             # audio engine, analytics, storage
+  api/                  # cliente HTTP base, interceptores, DTOs
+  utils/                # formatTime, debounce, normalizeText
+</code></pre>
+<p><strong>Reglas de dependencia (Clean Architecture):</strong> <code>ui → features → domain</code>; <code>domain</code> no importa nada externo; <code>services</code> y <code>api</code> implementan interfaces (puertos) definidas en <code>domain</code>. Una feature nunca importa componentes internos de otra: se comunica por su índice público (<code>features/x/index.ts</code>) o por eventos.</p>
+<p><strong>Principios:</strong> SRP (un hook/servicio = una responsabilidad), DRY (<code>TrackRow</code>, <code>MediaCard</code>, <code>useInfiniteList</code> compartidos), Open/Closed (estrategias de recomendación y de ordenamiento intercambiables), Dependency Inversion (el player depende de la interfaz <code>AudioEngine</code>, no de <code>HTMLAudioElement</code>).</p>
+<p><strong>Convenciones de API:</strong> prefijo <code>/api/v1</code>, JSON, paginación por cursor (<code>?limit=&amp;cursor=</code>), errores con formato <code>{ &quot;error&quot;: { &quot;code&quot;, &quot;message&quot;, &quot;details&quot; } }</code>, IDs UUID v7.</p>
+<hr>
+<h1>Skill: 01 — Music Player</h1>
+<h2>Objetivo</h2>
+<p>Proveer el reproductor principal (mini y full) con control completo de reproducción y una máquina de estados robusta.</p>
+<h2>Funcionalidades</h2>
+<ul>
+<li>Play/Pause, Previous/Next, seek bar, volumen, mute.</li>
+<li>Tiempo actual / duración total.</li>
+<li>Autoplay al terminar (siguiente en cola), Repeat (off/all/one), Shuffle.</li>
+<li>Mini-player fijo inferior y Full player (pantalla completa).</li>
+<li>Cambio de pista sin cortes: se reutiliza un único elemento de audio y se precarga la siguiente pista.</li>
+<li>Estados visibles de loading, buffering, error y playing.</li>
+<li>Media Session API (controles del sistema y teclas multimedia).</li>
+<li>Atajos: <code>Space</code> play/pause, <code>←/→</code> ±5 s, <code>↑/↓</code> volumen, <code>M</code> mute.</li>
+</ul>
+<h2>User Flow</h2>
+<ol>
+<li>El usuario pulsa play en una canción, álbum o playlist.</li>
+<li>El sistema construye la cola (Skill 12) y establece <code>currentTrack</code>.</li>
+<li>Estado <code>LOADING</code> → se resuelve URL de stream → <code>PLAYING</code>.</li>
+<li>Si la red se interrumpe: <code>BUFFERING</code>; si falla: <code>ERROR</code> con opción de reintentar/saltar.</li>
+<li>Al terminar: <code>ENDED</code> → según repeat/cola, avanza o queda en <code>IDLE</code>.</li>
+</ol>
+<h2>Componentes</h2>
+<p><code>MiniPlayer</code>, <code>FullPlayer</code>, <code>PlayerControls</code>, <code>SeekBar</code>, <code>VolumeControl</code>, <code>TimeLabel</code>, <code>NowPlayingInfo</code>, <code>PlayerErrorBanner</code>, <code>AudioEngine</code> (servicio), <code>MediaSessionAdapter</code>.</p>
+<h2>Estado</h2>
+<p>Máquina de estados finita:</p>
+<pre><code>IDLE ──load()──▶ LOADING ──canplay──▶ PLAYING ◀──play()── PAUSED
+                    │                   │  ▲                 ▲
+                    │                   │  └─canplay─┐       │pause()
+                    │                   ▼            │       │
+                    │              BUFFERING ────────┘       │
+                    │                   │                    │
+                    └────error─────────▶ ERROR ◀──error──────┘
+PLAYING ──ended──▶ ENDED ──next()/repeat──▶ LOADING | IDLE
+</code></pre>
+<p>Transiciones válidas (todas las demás se ignoran y se registran en debug):</p>
+<table>
+<thead>
+<tr>
+<th>Desde</th>
+<th>Evento</th>
+<th>Hacia</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IDLE</td>
+<td>LOAD</td>
+<td>LOADING</td>
+</tr>
+<tr>
+<td>LOADING</td>
+<td>CAN_PLAY</td>
+<td>PLAYING (si autoplay) / PAUSED</td>
+</tr>
+<tr>
+<td>PLAYING</td>
+<td>PAUSE</td>
+<td>PAUSED</td>
+</tr>
+<tr>
+<td>PAUSED</td>
+<td>PLAY</td>
+<td>PLAYING</td>
+</tr>
+<tr>
+<td>PLAYING</td>
+<td>WAITING</td>
+<td>BUFFERING</td>
+</tr>
+<tr>
+<td>BUFFERING</td>
+<td>CAN_PLAY</td>
+<td>PLAYING</td>
+</tr>
+<tr>
+<td>cualquiera</td>
+<td>FAIL</td>
+<td>ERROR</td>
+</tr>
+<tr>
+<td>PLAYING</td>
+<td>ENDED</td>
+<td>ENDED</td>
+</tr>
+<tr>
+<td>ERROR</td>
+<td>RETRY / NEXT</td>
+<td>LOADING</td>
+</tr>
+<tr>
+<td>ENDED</td>
+<td>NEXT / REPEAT</td>
+<td>LOADING / IDLE</td>
+</tr>
+</tbody>
+</table>
+<p>El estado vive únicamente en Skill 14; el player solo despacha eventos y renderiza.</p>
+<h2>Datos</h2>
+<p><code>Track { id, title, durationMs, streamUrl, artworkUrl }</code>, posición de reproducción (<code>currentTime</code>), preferencias (<code>volume</code>, <code>muted</code>, <code>repeatMode</code>, <code>shuffle</code>) persistidas en <code>localStorage</code>.</p>
+<h2>API</h2>
+<ul>
+<li><code>GET /tracks/:id/stream</code> → <code>{ url, expiresAt, format, bitrate }</code> (URL firmada de corta vida).</li>
+<li><code>PUT /me/playback</code> → guarda <code>{ trackId, positionMs, queueId }</code> (Skill 10/14, reanudar).</li>
+</ul>
+<h2>Reglas de negocio</h2>
+<ul>
+<li>Al cambiar de pista, <code>currentTime</code> se reinicia a 0.</li>
+<li>&quot;Previous&quot; tras &gt;3 s de reproducción reinicia la pista; antes de 3 s va a la anterior.</li>
+<li>Repeat <code>one</code> ignora Next automático pero no Next manual.</li>
+<li>Una reproducción cuenta como &quot;escucha&quot; desde 30 s o 50 % de la pista (lo que ocurra primero).</li>
+<li>Un solo audio activo: iniciar reproducción en otro dispositivo/pestaña pausa la actual (BroadcastChannel / WebSocket).</li>
+</ul>
+<h2>Casos de error</h2>
+<ul>
+<li>URL de stream expirada → renovar una vez de forma silenciosa.</li>
+<li>Pista no disponible (404/región) → toast + saltar a la siguiente tras 2 s.</li>
+<li><code>NotAllowedError</code> por autoplay bloqueado → mostrar botón &quot;Tocar para reproducir&quot;.</li>
+<li>Pérdida de red → <code>BUFFERING</code> con reintento exponencial (3 intentos) → <code>ERROR</code>.</li>
+</ul>
+<h2>Dependencias</h2>
+<p>Skill 14 (estado), 12 (cola), 10 (historial), 03 (letras, escucha <code>currentTime</code>), 15 (layouts).</p>
+<h2>Consideraciones técnicas</h2>
+<ul>
+<li><code>AudioEngine</code> implementa <code>play/pause/seek/setVolume/load/preload/on(event)</code>; permite mock en tests.</li>
+<li>Actualizar <code>currentTime</code> con <code>requestAnimationFrame</code> a ~4 Hz para la UI, no en cada <code>timeupdate</code>.</li>
+<li>Precarga: cuando quedan &lt;20 s, <code>preload(nextTrack)</code> en un segundo elemento de audio (crossfade opcional, Skill adicional).</li>
+<li>Accesibilidad: <code>role=&quot;slider&quot;</code>, <code>aria-valuenow</code>, foco visible, <code>aria-live=&quot;polite&quot;</code> para cambios de pista.</li>
+</ul>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Todas las transiciones de la tabla se cubren con tests unitarios.</li>
+<li><input disabled="" type="checkbox"> Cambio de pista en &lt;300 ms percibidos con la siguiente precargada.</li>
+<li><input disabled="" type="checkbox"> Controles del sistema (teclas multimedia, pantalla de bloqueo) funcionan.</li>
+<li><input disabled="" type="checkbox"> Un error de red nunca deja la UI en <code>LOADING</code> indefinido (timeout 10 s).</li>
+<li><input disabled="" type="checkbox"> Accesible por teclado y lector de pantalla.</li>
+</ul>
+<hr>
+<h1>Skill: 02 — Music Search</h1>
+<h2>Objetivo</h2>
+<p>Búsqueda instantánea, tolerante a errores y unificada para canciones, artistas, álbumes y playlists.</p>
+<h2>Funcionalidades</h2>
+<ul>
+<li>Autocomplete y resultados instantáneos mientras se escribe.</li>
+<li>Historial y búsquedas recientes (borrar una / todas).</li>
+<li>Filtros por tipo, género, año, duración, explícito.</li>
+<li>Ordenamiento: relevancia, popularidad, fecha, alfabético.</li>
+<li>Tolerancia a errores ortográficos y búsqueda parcial/prefijo, sin importar tildes ni mayúsculas.</li>
+<li>Resultados agrupados (&quot;Mejor resultado&quot;, Canciones, Artistas, Álbumes, Playlists).</li>
+<li>Estado vacío con sugerencias.</li>
+</ul>
+<h2>User Flow</h2>
+<ol>
+<li>El usuario enfoca la barra (<code>/</code> como atajo) → se muestran búsquedas recientes.</li>
+<li>Escribe → tras 250 ms de debounce se piden sugerencias.</li>
+<li>Presiona Enter o elige una sugerencia → página <code>/search?q=</code> con secciones y filtros.</li>
+<li>Reproduce, abre artista/álbum o añade a playlist desde el resultado.</li>
+</ol>
+<h2>Componentes</h2>
+<p><code>SearchBar</code>, <code>SuggestionList</code>, <code>RecentSearches</code>, <code>SearchResultsPage</code>, <code>ResultSection</code>, <code>FilterChips</code>, <code>SortMenu</code>, <code>EmptySearchState</code>, <code>TopResultCard</code>.</p>
+<h2>Estado</h2>
+<p><code>query</code>, <code>debouncedQuery</code>, <code>filters</code>, <code>sort</code>, <code>status</code> (idle | loading | success | empty | error), <code>recent[]</code>. Resultados en la caché de TanStack Query con clave <code>['search', q, filters, sort]</code>.</p>
+<h2>Datos</h2>
+<p><code>SearchHistory { id, userId, query, createdAt }</code>; índice de búsqueda con campos normalizados (<code>title_norm</code>, <code>artist_norm</code>, <code>album_norm</code>).</p>
+<h2>API</h2>
+<ul>
+<li><code>GET /search?q=&amp;type=track,artist,album,playlist&amp;genre=&amp;year=&amp;sort=&amp;limit=&amp;cursor=</code> → resultados agrupados con <code>topResult</code>.</li>
+<li><code>GET /search/suggest?q=</code> → hasta 8 sugerencias <code>{ text, type, id }</code>.</li>
+<li><code>GET /me/search-history</code>, <code>POST /me/search-history</code>, <code>DELETE /me/search-history[/:id]</code>.</li>
+</ul>
+<h2>Reglas de negocio</h2>
+<ul>
+<li>Mínimo 2 caracteres para sugerencias.</li>
+<li>Query normalizada: minúsculas, sin acentos, trim, espacios colapsados.</li>
+<li>Ranking = coincidencia textual (0.5) + popularidad (0.3) + afinidad del usuario (0.2).</li>
+<li>El historial guarda máximo 50 entradas; se deduplican.</li>
+<li>Playlists privadas de otros usuarios nunca aparecen.</li>
+</ul>
+<h2>Casos de error</h2>
+<ul>
+<li>Sin resultados → mensaje &quot;No encontramos «xyz»&quot; + sugerencia de corrección (&quot;¿Quisiste decir…?&quot;) + acceso a Discovery.</li>
+<li>Fallo de red → estado de error con reintento; se mantienen los últimos resultados.</li>
+<li>Query maliciosa/larga (&gt;100 chars) → 400 con mensaje claro.</li>
+</ul>
+<h2>Dependencias</h2>
+<p>Skill 01 (reproducir), 04 (añadir a playlist), 05/07 (navegación), 11 (afinidad), 15 (layout móvil).</p>
+<h2>Consideraciones técnicas</h2>
+<ul>
+<li>MVP: PostgreSQL <code>pg_trgm</code> + <code>unaccent</code> + índices GIN; <code>similarity()</code> para typos; <code>ILIKE 'q%'</code> para prefijo.</li>
+<li>V2: Meilisearch/OpenSearch con typo tolerance nativa.</li>
+<li>Cancelar peticiones obsoletas con <code>AbortController</code>; cachear sugerencias 60 s.</li>
+<li>Resaltar coincidencias en el texto (escapando HTML).</li>
+</ul>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Sugerencias en &lt;200 ms p95 con 100 k canciones.</li>
+<li><input disabled="" type="checkbox"> &quot;Bad Buny&quot; devuelve Bad Bunny; &quot;cold pla&quot; devuelve Coldplay.</li>
+<li><input disabled="" type="checkbox"> Nunca se dispara una petición por cada pulsación de tecla.</li>
+<li><input disabled="" type="checkbox"> Estados vacío, error y carga implementados y probados.</li>
+</ul>
+<hr>
+<h1>Skill: 03 — Lyrics</h1>
+<h2>Objetivo</h2>
+<p>Mostrar letras, sincronizadas por línea cuando existan timestamps.</p>
+<h2>Funcionalidades</h2>
+<ul>
+<li>Letra estática o sincronizada (formato LRC).</li>
+<li>Resaltado de la línea actual, scroll automático suave.</li>
+<li>Scroll manual que pausa el auto-scroll; botón &quot;Sincronizar&quot; para volver.</li>
+<li>Tocar una línea sincronizada hace seek a ese instante.</li>
+<li>Estado alternativo si no hay letra.</li>
+<li>Ajuste de tamaño de fuente; vista completa en móvil.</li>
+</ul>
+<h2>User Flow</h2>
+<ol>
+<li>Al cambiar de pista se solicita la letra.</li>
+<li>Si <code>synced</code>: la línea activa se calcula según <code>currentTime</code>.</li>
+<li>Si el usuario hace scroll, aparece &quot;Volver a sincronizar&quot;.</li>
+<li>Si no hay letra: &quot;Letra no disponible&quot; + opción &quot;Sugerir letra&quot; (futuro).</li>
+</ol>
+<h2>Componentes</h2>
+<p><code>LyricsPanel</code>, <code>LyricsLine</code>, <code>LyricsEmptyState</code>, <code>ResyncButton</code>, <code>useActiveLine</code> (hook), <code>parseLrc</code> (util).</p>
+<h2>Estado</h2>
+<p><code>lyrics</code>, <code>status</code>, <code>activeLineIndex</code> (derivado, no almacenado), <code>isAutoScroll</code>.</p>
+<h2>Datos</h2>
+<p><code>Lyrics { id, trackId, language, isSynced, source, copyright }</code>, <code>LyricsLine { id, lyricsId, index, startMs, endMs?, text }</code>.</p>
+<h2>API</h2>
+<ul>
+<li><code>GET /lyrics/:trackId</code> → <code>{ trackId, isSynced, language, lines:[{index,startMs,text}], source }</code> o <code>404</code>.</li>
+</ul>
+<h2>Reglas de negocio</h2>
+<ul>
+<li>La línea activa es la última con <code>startMs &lt;= currentTime + offset</code>.</li>
+<li>Sin timestamps: mostrar texto plano sin resaltado.</li>
+<li>Respetar licencias: campo <code>source</code> y <code>copyright</code> visibles en el pie.</li>
+<li>Offset manual por pista (±2 s) opcional.</li>
+</ul>
+<h2>Casos de error</h2>
+<ul>
+<li><code>404</code> → estado vacío (no es error).</li>
+<li>LRC malformado → fallback a letra plana y log.</li>
+<li>Salto de seek grande → recalcular con búsqueda binaria.</li>
+</ul>
+<h2>Dependencias</h2>
+<p>Skill 14 (<code>currentTime</code>, <code>currentTrack</code>), 01, 15.</p>
+<h2>Consideraciones técnicas</h2>
+<ul>
+<li>Búsqueda binaria O(log n) para línea activa; solo re-renderizar cuando cambie el índice.</li>
+<li><code>scrollIntoView({ behavior:'smooth', block:'center' })</code> con detección de scroll del usuario por <code>wheel/touchmove</code>.</li>
+<li>Cachear letras por <code>trackId</code> (24 h).</li>
+<li>Sanitizar texto (nunca <code>dangerouslySetInnerHTML</code>).</li>
+</ul>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Desfase visual &lt;150 ms respecto al audio.</li>
+<li><input disabled="" type="checkbox"> Resincronizar funciona tras scroll manual y tras seek.</li>
+<li><input disabled="" type="checkbox"> Sin letra se muestra estado alternativo, sin errores en consola.</li>
+</ul>
+<hr>
+<h1>Skill: 04 — Playlist Manager</h1>
+<h2>Objetivo</h2>
+<p>CRUD completo de playlists con reordenamiento, visibilidad y uso compartido.</p>
+<h2>Funcionalidades</h2>
+<p>Crear, editar (nombre, descripción, portada), eliminar, duplicar; añadir/quitar canciones; reordenar con drag &amp; drop; pública/privada; compartir por enlace; mostrar nº de canciones y duración total; modal &quot;Añadir a playlist&quot;.</p>
+<h2>User Flow</h2>
+<ol>
+<li>&quot;Nueva playlist&quot; → se crea con nombre por defecto y se abre su vista.</li>
+<li>Desde cualquier <code>TrackRow</code> → menú &quot;⋯&quot; → &quot;Añadir a playlist&quot; → modal con lista + &quot;Crear nueva&quot;.</li>
+<li>Arrastrar filas para reordenar (con alternativa de teclado).</li>
+<li>Compartir: copiar enlace <code>/playlist/:id</code> (solo si es pública o con token).</li>
+</ol>
+<h2>Componentes</h2>
+<p><code>PlaylistPage</code>, <code>PlaylistHeader</code>, <code>PlaylistTrackList</code> (virtualizada + sortable), <code>AddToPlaylistModal</code>, <code>PlaylistForm</code>, <code>CoverUploader</code>, <code>ShareDialog</code>, <code>PlaylistCard</code>.</p>
+<h2>Estado</h2>
+<p>Servidor: TanStack Query (<code>['playlists']</code>, <code>['playlist', id]</code>). Local: orden optimista durante el drag; mutaciones con rollback.</p>
+<h2>Datos</h2>
+<p><code>Playlist { id, ownerId, name, description?, coverUrl?, isPublic, createdAt, updatedAt }</code>, <code>PlaylistTrack { playlistId, trackId, position, addedAt, addedBy }</code>.</p>
+<h2>API</h2>
+<ul>
+<li><code>GET /playlists</code> (propias) · <code>POST /playlists</code> <code>{name, description?, isPublic?}</code> · <code>GET /playlists/:id</code></li>
+<li><code>PUT /playlists/:id</code> (parcial: nombre, descripción, visibilidad) · <code>DELETE /playlists/:id</code></li>
+<li><code>POST /playlists/:id/tracks</code> <code>{ trackIds:[], position? }</code> · <code>DELETE /playlists/:id/tracks/:trackId</code></li>
+<li><code>PATCH /playlists/:id/tracks/order</code> <code>{ trackId, newPosition }</code></li>
+<li><code>POST /playlists/:id/duplicate</code> · <code>POST /playlists/:id/cover</code> (multipart)</li>
+<li><code>POST /playlists/:id/share</code> → <code>{ url, token? }</code></li>
+</ul>
+<h2>Reglas de negocio</h2>
+<ul>
+<li>Solo el dueño edita/elimina. Playlists públicas son de solo lectura para terceros.</li>
+<li>Nombre 1–100 caracteres; descripción ≤ 300.</li>
+<li>Se permite repetir una canción, pero se avisa (&quot;Ya está en esta playlist&quot;).</li>
+<li>Límite de 10 000 canciones por playlist.</li>
+<li>Posiciones contiguas 0..n-1; reordenar recalcula en una transacción.</li>
+<li>Portada por defecto: mosaico de las 4 primeras carátulas.</li>
+</ul>
+<h2>Casos de error</h2>
+<p>403 (no es dueño), 404 (playlist eliminada), 409 (conflicto de orden concurrente → refrescar), 413/415 (portada &gt;5 MB o tipo inválido), pérdida de red durante drag → rollback + toast.</p>
+<h2>Dependencias</h2>
+<p>Skill 01/12 (reproducir/encolar), 08 (biblioteca), 02, 15.</p>
+<h2>Consideraciones técnicas</h2>
+<ul>
+<li>Drag &amp; drop con <code>dnd-kit</code> (accesible por teclado).</li>
+<li>Reordenamiento con posiciones densas en transacción, o LexoRank/fractional indexing si hay alta concurrencia.</li>
+<li>Duración total calculada por <code>SUM</code> y cacheada en columna denormalizada.</li>
+<li>Portadas: validar MIME real, redimensionar en servidor, servir por CDN.</li>
+</ul>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Crear, editar, eliminar y duplicar con feedback por toast.</li>
+<li><input disabled="" type="checkbox"> Reordenar persiste tras recargar; funciona con teclado.</li>
+<li><input disabled="" type="checkbox"> Un usuario no puede modificar playlists ajenas (test de autorización).</li>
+<li><input disabled="" type="checkbox"> Listas de 1 000+ pistas se desplazan fluidas (virtualización).</li>
+</ul>
+<hr>
+<h1>Skill: 05 — Artist Profile</h1>
+<h2>Objetivo</h2>
+<p>Perfil completo y navegable de cada artista o grupo.</p>
+<h2>Funcionalidades</h2>
+<p>Cabecera (nombre, imagen, oyentes mensuales, seguir), biografía, género, país, inicio de carrera, canciones populares, discografía (álbumes, singles, colaboraciones), artistas relacionados, botón reproducir/aleatorio.</p>
+<h2>User Flow</h2>
+<ol>
+<li>El usuario abre <code>/artist/:id</code> desde búsqueda, tarjeta o pista.</li>
+<li>Ve canciones populares y puede reproducir el top.</li>
+<li>Alterna pestañas: Discografía · Sobre el artista · Trayectoria (Skill 06).</li>
+<li>Sigue al artista o abre uno relacionado.</li>
+</ol>
+<h2>Componentes</h2>
+<p><code>ArtistPage</code>, <code>ArtistHero</code>, <code>PopularTracks</code>, <code>DiscographyTabs</code>, <code>AlbumGrid</code>, <code>RelatedArtists</code>, <code>ArtistBio</code>, <code>FollowButton</code>.</p>
+<h2>Estado</h2>
+<p>Caché de servidor <code>['artist', id]</code>; UI local: pestaña activa y &quot;ver más&quot;.</p>
+<h2>Datos</h2>
+<p><code>Artist { id, name, imageUrl, bio, country, careerStartYear, isGroup, verified }</code>, relación con <code>Genre</code>, <code>ArtistRelation</code>, miembros (si es grupo).</p>
+<h2>API</h2>
+<ul>
+<li><code>GET /artists/:id</code> · <code>GET /artists/:id/albums?type=album|single|compilation|appears_on</code></li>
+<li><code>GET /artists/:id/top-tracks</code> · <code>GET /artists/:id/related</code> · <code>GET /artists/:id/collaborations</code></li>
+</ul>
+<h2>Reglas de negocio</h2>
+<ul>
+<li>Popularidad = reproducciones ponderadas por recencia (últimos 90 días).</li>
+<li>Discografía ordenada por fecha descendente; separada por tipo.</li>
+<li>Colaboraciones = pistas donde figura como artista secundario.</li>
+<li>Biografía en varios idiomas con fallback a español/inglés.</li>
+</ul>
+<h2>Casos de error</h2>
+<p>Artista inexistente → 404 con página &quot;No encontramos este artista&quot;; sin biografía → bloque oculto; imagen rota → avatar con iniciales.</p>
+<h2>Dependencias</h2>
+<p>Skill 07, 06, 09 (seguir), 01, 11 (relacionados).</p>
+<h2>Consideraciones técnicas</h2>
+<p>Cargar cabecera + top tracks primero (skeleton), discografía por lazy loading; imágenes <code>srcset</code> + WebP/AVIF; caché CDN 10 min; datos de artistas relacionados precomputados por job nocturno.</p>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Todos los campos requeridos visibles o con estado alternativo.</li>
+<li><input disabled="" type="checkbox"> LCP &lt;2.5 s en 4G simulada.</li>
+<li><input disabled="" type="checkbox"> Seguir/dejar de seguir refleja el cambio de inmediato (optimista).</li>
+</ul>
+<hr>
+<h1>Skill: 06 — Artist Career / Timeline</h1>
+<h2>Objetivo</h2>
+<p>Visualizar la trayectoria del artista como una línea temporal moderna e interactiva.</p>
+<h2>Funcionalidades</h2>
+<ul>
+<li>Hitos: inicio de carrera, primer lanzamiento, álbumes clave, cambios de estilo, colaboraciones relevantes, premios, eventos importantes.</li>
+<li>Filtros por tipo de hito y por década.</li>
+<li>Gráfico de &quot;evolución musical&quot; (géneros/atributos de audio por época).</li>
+<li>Cada hito enlaza a álbum, canción o fuente; botón &quot;escuchar esta época&quot;.</li>
+<li>Vista vertical (móvil) y horizontal con scroll (desktop).</li>
+</ul>
+<h2>User Flow</h2>
+<ol>
+<li>En el perfil, pestaña &quot;Trayectoria&quot;.</li>
+<li>Se muestra la línea con hitos agrupados por año; el usuario filtra por tipo.</li>
+<li>Abre un hito → tarjeta con descripción, imagen y acciones (reproducir, ir al álbum).</li>
+<li>Explora la evolución musical con un gráfico de áreas por género/energía.</li>
+</ol>
+<h2>Componentes</h2>
+<p><code>CareerTimeline</code>, <code>TimelineNode</code>, <code>TimelineFilters</code>, <code>MilestoneCard</code>, <code>EraPlayButton</code>, <code>StyleEvolutionChart</code>, <code>AwardBadge</code>.</p>
+<h2>Estado</h2>
+<p>Servidor <code>['artist', id, 'timeline']</code>; local: filtros, hito seleccionado, zoom.</p>
+<h2>Datos</h2>
+<p><code>CareerEvent { id, artistId, type (start|release|album|style_change|collab|award|event), date, datePrecision (year|month|day), title, description, relatedAlbumId?, relatedTrackId?, relatedArtistId?, sourceUrl?, imageUrl? }</code>. Métricas de estilo: <code>ArtistEraStat { artistId, year, genreWeights JSONB, avgEnergy, avgValence, avgTempo }</code>.</p>
+<h2>API</h2>
+<ul>
+<li><code>GET /artists/:id/timeline?type=&amp;from=&amp;to=</code> → hitos ordenados.</li>
+<li><code>GET /artists/:id/evolution</code> → series por año.</li>
+<li>(Admin) <code>POST/PUT/DELETE /admin/artists/:id/timeline</code>.</li>
+</ul>
+<h2>Reglas de negocio</h2>
+<ul>
+<li>Orden cronológico ascendente; hitos sin día exacto se ubican por precisión declarada.</li>
+<li>Los lanzamientos se generan automáticamente desde <code>Album</code>/<code>Track</code>; los demás son editoriales.</li>
+<li>Premios y eventos requieren <code>sourceUrl</code> para publicarse.</li>
+<li>Cambios de estilo solo se muestran si hay ≥2 años de datos.</li>
+</ul>
+<h2>Casos de error</h2>
+<p>Sin hitos → estado vacío &quot;Aún no tenemos la trayectoria completa&quot;; datos inconsistentes (fecha futura) → excluidos y registrados; fallo de gráfico → se muestra solo la línea.</p>
+<h2>Dependencias</h2>
+<p>Skill 05, 07, 01; fuente de datos editorial/API externa (MusicBrainz, Wikidata).</p>
+<h2>Consideraciones técnicas</h2>
+<p>SVG/CSS con <code>IntersectionObserver</code> para animar entrada; virtualizar si &gt;200 hitos; gráfico con D3 o Recharts; respetar <code>prefers-reduced-motion</code>; importación de datos vía job que combina catálogo propio + MusicBrainz/Wikidata con revisión editorial.</p>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Hitos ordenados y filtrables; funciona en móvil y desktop.</li>
+<li><input disabled="" type="checkbox"> Cada hito enlaza a su entidad relacionada cuando existe.</li>
+<li><input disabled="" type="checkbox"> Animaciones desactivadas con <code>prefers-reduced-motion</code>.</li>
+</ul>
+<hr>
+<h1>Skill: 07 — Album Explorer</h1>
+<h2>Objetivo</h2>
+<p>Consultar álbumes con toda su información y reproducirlos.</p>
+<h2>Funcionalidades</h2>
+<p>Portada, nombre, artista, año, género, nº de canciones, duración, lista de pistas (por disco), créditos/info, canciones más reproducidas, guardar álbum, reproducir/aleatorio, más del artista.</p>
+<h2>User Flow</h2>
+<p>Abrir <code>/album/:id</code> → ver cabecera → reproducir o elegir pista → guardar en biblioteca → navegar al artista.</p>
+<h2>Componentes</h2>
+<p><code>AlbumPage</code>, <code>AlbumHeader</code>, <code>TrackList</code> (con <code>TrackRow</code>), <code>AlbumInfoPanel</code>, <code>TopTracksBadge</code>, <code>MoreByArtist</code>.</p>
+<h2>Estado</h2>
+<p>Caché <code>['album', id]</code>; local: disco expandido, orden de pistas.</p>
+<h2>Datos</h2>
+<p><code>Album { id, title, artistId, releaseDate, type, genreId, coverUrl, label?, totalTracks, durationMs }</code>, <code>Track { albumId, discNumber, trackNumber }</code>.</p>
+<h2>API</h2>
+<ul>
+<li><code>GET /albums/:id</code> · <code>GET /albums/:id/tracks</code> · <code>GET /albums?artistId=&amp;type=&amp;sort=</code></li>
+<li><code>PUT /me/library/albums/:id</code> · <code>DELETE /me/library/albums/:id</code></li>
+</ul>
+<h2>Reglas de negocio</h2>
+<ul>
+<li>Pistas ordenadas por <code>(discNumber, trackNumber)</code>.</li>
+<li>Duración total = suma de pistas; nº de pistas derivado.</li>
+<li>&quot;Más reproducidas&quot; = top 5 por reproducciones globales de los últimos 90 días.</li>
+<li>Pistas no disponibles se muestran atenuadas y se omiten al reproducir.</li>
+</ul>
+<h2>Casos de error</h2>
+<p>Álbum 404; pista sin audio → marcada &quot;No disponible&quot;; portada rota → placeholder.</p>
+<h2>Dependencias</h2>
+<p>Skill 01, 05, 08/09, 12.</p>
+<h2>Consideraciones técnicas</h2>
+<p>Color dominante de portada para fondo degradado (extraído en servidor y guardado como <code>dominantColor</code>); <code>TrackRow</code> compartido; prefetch al hover de la tarjeta.</p>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Muestra todos los campos requeridos.</li>
+<li><input disabled="" type="checkbox"> Reproduce el álbum completo y el orden respeta discos.</li>
+<li><input disabled="" type="checkbox"> Guardar/quitar del catálogo personal es inmediato.</li>
+</ul>
+<hr>
+<h1>Skill: 08 — User Library</h1>
+<h2>Objetivo</h2>
+<p>Centralizar el contenido personal del usuario.</p>
+<h2>Funcionalidades</h2>
+<p>Pestañas: Playlists, Álbumes, Artistas, Canciones favoritas, Historial, Descargas (si aplica). Búsqueda dentro de la biblioteca, ordenar (reciente, alfabético, artista), vista lista/cuadrícula, carpetas de playlists (V2).</p>
+<h2>User Flow</h2>
+<p>Sidebar → &quot;Tu biblioteca&quot; → elegir pestaña → filtrar/ordenar → reproducir o abrir elemento.</p>
+<h2>Componentes</h2>
+<p><code>LibraryPage</code>, <code>LibraryTabs</code>, <code>LibraryFilterBar</code>, <code>LibraryGrid/List</code>, <code>LibraryEmptyState</code>, <code>DownloadsManager</code> (V3).</p>
+<h2>Estado</h2>
+<p>Caché por pestaña con paginación infinita; filtros y vista en <code>localStorage</code>.</p>
+<h2>Datos</h2>
+<p>Agregación de <code>Playlist</code>, <code>Favorite</code>, <code>Follow</code>, <code>ListeningHistory</code>; <code>Download { userId, trackId, status, sizeBytes, storedAt }</code> (cliente, IndexedDB).</p>
+<h2>API</h2>
+<ul>
+<li><code>GET /me/library?type=playlists|albums|artists|tracks&amp;sort=&amp;q=&amp;cursor=</code></li>
+<li><code>GET /me/library/summary</code> → contadores.</li>
+<li>Descargas (V3): <code>POST /me/downloads</code>, <code>DELETE /me/downloads/:trackId</code>.</li>
+</ul>
+<h2>Reglas de negocio</h2>
+<ul>
+<li>Todo el contenido es privado al usuario.</li>
+<li>Las descargas requieren sesión vigente y verificación periódica (cada 30 días) de licencia.</li>
+<li>Eliminar una playlist de la biblioteca ≠ eliminar canciones del catálogo.</li>
+</ul>
+<h2>Casos de error</h2>
+<p>Biblioteca vacía → CTA a Discovery; contenido retirado del catálogo → elemento marcado &quot;No disponible&quot; con opción de quitar; cuota de almacenamiento excedida (descargas) → aviso.</p>
+<h2>Dependencias</h2>
+<p>Skill 04, 09, 10, 07, 05, 01.</p>
+<h2>Consideraciones técnicas</h2>
+<p>Endpoint agregado para evitar N peticiones; descargas con Service Worker + Cache Storage/IndexedDB y audio cifrado (MVP: fuera de alcance, documentado como V3); virtualización en colecciones grandes.</p>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Todas las pestañas cargan con paginación y estados vacío/error.</li>
+<li><input disabled="" type="checkbox"> Búsqueda y orden funcionan sin recargar.</li>
+<li><input disabled="" type="checkbox"> Contadores coinciden con el contenido real.</li>
+</ul>
+<hr>
+<h1>Skill: 09 — Favorites</h1>
+<h2>Objetivo</h2>
+<p>Gestionar &quot;me gusta&quot;, álbumes guardados y artistas seguidos, sincronizados entre dispositivos.</p>
+<h2>Funcionalidades</h2>
+<p>Marcar/desmarcar canción (❤), guardar álbum, seguir artista, listar favoritos, sincronización multi-dispositivo, playlist automática &quot;Canciones que te gustan&quot;.</p>
+<h2>User Flow</h2>
+<p>Pulsar ❤ en cualquier <code>TrackRow</code>/player → cambio inmediato (optimista) → sincronización en segundo plano → refleja en otros dispositivos.</p>
+<h2>Componentes</h2>
+<p><code>FavoriteButton</code>, <code>FollowButton</code>, <code>SaveAlbumButton</code>, <code>LikedSongsPage</code>, hook <code>useFavorite(entityType, id)</code>.</p>
+<h2>Estado</h2>
+<p>Conjunto normalizado <code>favorites: { track: Set&lt;id&gt;, album: Set&lt;id&gt;, artist: Set&lt;id&gt; }</code> en caché; mutaciones optimistas con rollback.</p>
+<h2>Datos</h2>
+<p><code>Favorite { userId, entityType (track|album), entityId, createdAt }</code> (PK compuesta), <code>Follow { userId, artistId, createdAt }</code>.</p>
+<h2>API</h2>
+<ul>
+<li><code>PUT /me/favorites/tracks/:id</code> · <code>DELETE /me/favorites/tracks/:id</code></li>
+<li><code>PUT/DELETE /me/favorites/albums/:id</code></li>
+<li><code>PUT/DELETE /me/following/artists/:id</code></li>
+<li><code>GET /me/favorites?type=&amp;cursor=</code> · <code>GET /me/favorites/check?type=track&amp;ids=a,b,c</code> (consulta en lote)</li>
+<li><code>GET /me/sync?since=</code> (deltas) o WebSocket/SSE para cambios en tiempo real.</li>
+</ul>
+<h2>Reglas de negocio</h2>
+<ul>
+<li>Operaciones idempotentes (PUT/DELETE repetidos no fallan).</li>
+<li>Última escritura gana con marca <code>updatedAt</code>; borrados como tombstone para sincronizar.</li>
+<li>No se puede seguir a un artista inexistente; contador de seguidores actualizado de forma asíncrona.</li>
+</ul>
+<h2>Casos de error</h2>
+<p>Sin conexión → cola offline y reintento al reconectar; conflicto entre dispositivos → resolver por timestamp; 401 → reautenticación sin perder la acción pendiente.</p>
+<h2>Dependencias</h2>
+<p>Skill 08, 05, 07, 11 (señal fuerte de gusto), Auth.</p>
+<h2>Consideraciones técnicas</h2>
+<p><code>check</code> en lote para pintar corazones en listas; <code>BroadcastChannel</code> para sincronizar pestañas; SSE para otros dispositivos; índices <code>(userId, entityType, createdAt DESC)</code>.</p>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Un ❤ aparece en otro dispositivo en &lt;5 s.</li>
+<li><input disabled="" type="checkbox"> Doble clic rápido no genera estados inconsistentes.</li>
+<li><input disabled="" type="checkbox"> Funciona offline y se sincroniza al reconectar.</li>
+</ul>
+<hr>
+<h1>Skill: 10 — Listening History</h1>
+<h2>Objetivo</h2>
+<p>Registrar el consumo y ofrecer consultas y estadísticas.</p>
+<h2>Funcionalidades</h2>
+<p>Registrar canción, artista, álbum, fecha, hora, tiempo y % reproducido; consultar últimas canciones, más escuchadas, artistas y álbumes top por periodo (semana/mes/año/siempre); reanudar donde se dejó; estadísticas básicas; borrar historial.</p>
+<h2>User Flow</h2>
+<p>Reproducción → al superar el umbral se registra la escucha → el usuario ve &quot;Recientes&quot; y &quot;Tus estadísticas&quot; → puede reanudar la última canción.</p>
+<h2>Componentes</h2>
+<p><code>HistoryPage</code>, <code>RecentlyPlayedRow</code>, <code>StatsDashboard</code>, <code>TopList</code>, <code>ResumeCard</code>, <code>HistoryTracker</code> (servicio en el cliente).</p>
+<h2>Estado</h2>
+<p><code>HistoryTracker</code> acumula <code>playedMs</code> por sesión de pista (excluye pausas y seeks) y envía en lote.</p>
+<h2>Datos</h2>
+<p><code>ListeningHistory { id, userId, trackId, artistId, albumId, startedAt, playedMs, trackDurationMs, percentPlayed, completed, source (playlist|album|search|radio…), deviceId }</code>; <code>PlaybackPosition { userId, trackId, positionMs, updatedAt }</code>.</p>
+<h2>API</h2>
+<ul>
+<li><code>POST /history</code> <code>{ events:[{trackId,startedAt,playedMs,percentPlayed,source}] }</code> (lote)</li>
+<li><code>GET /history?limit=&amp;cursor=</code> · <code>DELETE /history</code> · <code>DELETE /history/:id</code></li>
+<li><code>GET /stats/top?entity=track|artist|album&amp;range=week|month|year|all</code></li>
+<li><code>GET/PUT /me/playback</code> (posición para reanudar).</li>
+</ul>
+<h2>Reglas de negocio</h2>
+<ul>
+<li>Escucha válida: ≥30 s o ≥50 % de la pista.</li>
+<li><code>percentPlayed = playedMs / trackDurationMs</code> (máx. 100).</li>
+<li>Enviar posición cada 15 s y al pausar/cerrar (<code>visibilitychange</code>, <code>sendBeacon</code>).</li>
+<li>El usuario puede pausar el registro (&quot;sesión privada&quot;).</li>
+<li>Retención configurable; eliminación completa bajo solicitud (privacidad).</li>
+</ul>
+<h2>Casos de error</h2>
+<p>Pérdida de red → buffer local (IndexedDB) y reenvío; eventos duplicados → deduplicar por <code>(userId, trackId, startedAt)</code>; reloj del cliente desfasado → el servidor usa su hora y guarda la del cliente aparte.</p>
+<h2>Dependencias</h2>
+<p>Skill 01, 14, 11, 13, 08.</p>
+<h2>Consideraciones técnicas</h2>
+<p>Tabla particionada por mes; índices <code>(userId, startedAt DESC)</code>, <code>(userId, trackId)</code>; agregados diarios materializados para stats; procesamiento asíncrono con cola (BullMQ).</p>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Solo se registran escuchas válidas y no hay duplicados.</li>
+<li><input disabled="" type="checkbox"> Top 10 por periodo correcto contra un dataset de prueba.</li>
+<li><input disabled="" type="checkbox"> &quot;Continuar escuchando&quot; restaura pista y posición (±2 s).</li>
+</ul>
+<hr>
+<h1>Skill: 11 — Recommendation Engine</h1>
+<h2>Objetivo</h2>
+<p>Generar recomendaciones personalizadas, explicables y actualizadas.</p>
+<h2>Funcionalidades</h2>
+<p>Secciones: &quot;Porque escuchaste…&quot;, &quot;También te puede gustar&quot;, &quot;Descubre nuevos artistas&quot;, &quot;Nuevos lanzamientos&quot;, &quot;Tu mezcla personalizada&quot; (Daily Mix por género/estado de ánimo). Feedback (&quot;No me interesa&quot;). Explicación de por qué se recomienda.</p>
+<h2>User Flow</h2>
+<p>Home/Discovery solicita <code>/recommendations</code> → se muestran filas por sección → el usuario reproduce, guarda o descarta → el feedback ajusta futuras recomendaciones.</p>
+<h2>Componentes</h2>
+<p><code>RecommendationShelf</code>, <code>BecauseYouListenedRow</code>, <code>DailyMixCard</code>, <code>DiscoverArtistsRow</code>, <code>FeedbackMenu</code>; backend: <code>SignalCollector</code>, <code>CandidateGenerator</code>, <code>Ranker</code>, <code>Diversifier</code>, <code>ExplanationBuilder</code>.</p>
+<h2>Estado</h2>
+<p>Caché por sección <code>['recs', section]</code> (TTL 30 min); feedback local inmediato (oculta ítem).</p>
+<h2>Datos (entradas)</h2>
+<table>
+<thead>
+<tr>
+<th>Señal</th>
+<th>Origen</th>
+<th>Peso inicial</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Escuchas completas y repetidas</td>
+<td>ListeningHistory</td>
+<td>Alto</td>
+</tr>
+<tr>
+<td>Favoritos / seguidos</td>
+<td>Favorite, Follow</td>
+<td>Muy alto</td>
+</tr>
+<tr>
+<td>Skips tempranos (&lt;10 s)</td>
+<td>ListeningHistory</td>
+<td>Negativo</td>
+</tr>
+<tr>
+<td>Géneros y artistas en playlists</td>
+<td>Playlist</td>
+<td>Medio</td>
+</tr>
+<tr>
+<td>Hora del día / día de semana</td>
+<td>ListeningHistory</td>
+<td>Medio (contexto)</td>
+</tr>
+<tr>
+<td>Similitud de pistas</td>
+<td>audio features + co-ocurrencia en playlists</td>
+<td>Alto</td>
+</tr>
+<tr>
+<td>Popularidad y novedad</td>
+<td>catálogo</td>
+<td>Bajo (relleno/frío)</td>
+</tr>
+</tbody>
+</table>
+<p>Salidas: <code>Recommendation { userId, section, entityType, entityId, score, reasonType, reasonRefId, generatedAt }</code>, <code>RecommendationFeedback</code>.</p>
+<h2>API</h2>
+<ul>
+<li><code>GET /recommendations</code> → todas las secciones (<code>sections:[{id,title,items[],reason}]</code>).</li>
+<li><code>GET /recommendations/:section?limit=&amp;cursor=</code></li>
+<li><code>POST /recommendations/feedback</code> <code>{ entityType, entityId, action: dislike|hide|like }</code></li>
+<li><code>GET /tracks/:id/similar</code></li>
+</ul>
+<h2>Reglas de negocio</h2>
+<ul>
+<li>Nunca recomendar lo ya escuchado &gt;N veces esta semana en &quot;descubrir&quot;.</li>
+<li>&quot;Nuevos artistas&quot;: artistas sin escuchas previas cuyo género/afinidad supere umbral.</li>
+<li>Diversidad: máx. 2 pistas por artista por lista.</li>
+<li>Usuarios nuevos (cold start): géneros elegidos en onboarding + populares por país.</li>
+<li>Respeto a privacidad: opción para desactivar personalización.</li>
+</ul>
+<h2>Casos de error</h2>
+<p>Sin datos suficientes → fallback a tendencias; servicio caído → servir última versión cacheada; feedback fallido → reintento silencioso.</p>
+<h2>Dependencias</h2>
+<p>Skill 10, 09, 04, 13, 02.</p>
+<h2>Consideraciones técnicas — dónde interviene la IA</h2>
+<ul>
+<li><strong>Fase 1 (MVP, sin IA):</strong> reglas y SQL — top géneros/artistas del usuario, co-ocurrencia en playlists, popularidad reciente. Explicable y barato.</li>
+<li><strong>Fase 2 (ML clásico):</strong> filtrado colaborativo con factorización de matrices (ALS/implicit) sobre la matriz usuario×pista construida con <code>ListeningHistory</code>; similitud coseno de vectores. Job nocturno, resultados en Redis/Postgres.</li>
+<li><strong>Fase 3 (IA avanzada):</strong> embeddings de audio (p. ej. features de Spotify-like o modelos de audio) + embeddings de metadatos/letras; búsqueda vectorial (<code>pgvector</code>); <em>re-ranking</em> contextual (hora, dispositivo); LLM opcional solo para <strong>generar textos</strong> de explicación (&quot;Porque escuchaste X…&quot;) y descripciones de mezclas, nunca para decidir el ranking con datos sensibles crudos.</li>
+<li>Datos que necesita cada fase: historial (fase 1-3), features de audio y metadatos (fase 2-3), feedback explícito (fase 3). Todo se procesa con IDs seudonimizados.</li>
+<li>Evaluación: CTR, tasa de completado, ratio de skips, diversidad; A/B testing.</li>
+</ul>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Cada ítem trae <code>reason</code> explicable.</li>
+<li><input disabled="" type="checkbox"> Cold start devuelve contenido útil sin historial.</li>
+<li><input disabled="" type="checkbox"> &quot;No me interesa&quot; desaparece de inmediato y no reaparece.</li>
+<li><input disabled="" type="checkbox"> Respuesta p95 &lt;400 ms desde caché.</li>
+</ul>
+<hr>
+<h1>Skill: 12 — Queue Manager</h1>
+<h2>Objetivo</h2>
+<p>Gestionar la cola de reproducción de forma flexible.</p>
+<h2>Funcionalidades</h2>
+<p>Añadir a la cola, quitar, reordenar (drag &amp; drop), reproducir ahora, reproducir después (&quot;Play next&quot;), limpiar cola, guardar cola temporalmente (como playlist temporal), mostrar actual + siguientes, distinguir &quot;En cola manual&quot; vs &quot;Siguiente desde [contexto]&quot;.</p>
+<h2>User Flow</h2>
+<p>Menú &quot;⋯&quot; en una pista → &quot;Reproducir a continuación&quot; / &quot;Añadir a la cola&quot; → abrir panel de cola → reordenar/quitar → opcional &quot;Guardar como playlist&quot;.</p>
+<h2>Componentes</h2>
+<p><code>QueuePanel</code>, <code>QueueItem</code>, <code>NowPlayingSection</code>, <code>NextUpSection</code>, <code>QueueActionsMenu</code>, <code>SaveQueueDialog</code>.</p>
+<h2>Estado</h2>
+<p>Dos listas: <code>userQueue</code> (prioridad, manual) y <code>contextQueue</code> (álbum/playlist origen); <code>originalOrder</code> para revertir shuffle. Pertenece a Skill 14; Skill 12 aporta las operaciones.</p>
+<h2>Datos</h2>
+<p><code>Queue { id, userId, deviceId, currentIndex, items[], contextType, contextId, updatedAt }</code>, <code>QueueItem { queueId, trackId, position, source (manual|context), addedAt }</code>.</p>
+<h2>API</h2>
+<ul>
+<li><code>GET /me/queue</code> · <code>PUT /me/queue</code> (reemplazo completo) · <code>POST /me/queue/items</code> <code>{trackIds, mode: next|last}</code></li>
+<li><code>DELETE /me/queue/items/:itemId</code> · <code>PATCH /me/queue/order</code> · <code>DELETE /me/queue</code> (limpiar)</li>
+<li><code>POST /me/queue/save</code> <code>{ name }</code> → crea playlist.</li>
+</ul>
+<h2>Reglas de negocio</h2>
+<ul>
+<li>Orden de reproducción: <code>userQueue</code> → <code>contextQueue</code>.</li>
+<li>&quot;Play next&quot; inserta al inicio de <code>userQueue</code> respetando el orden de inserciones sucesivas.</li>
+<li>Shuffle no reordena la cola visible del usuario; barajea la <code>contextQueue</code> de forma determinista (semilla) y evita repetir hasta agotar.</li>
+<li>Máximo 500 elementos; el historial de la cola permite deshacer &quot;Limpiar&quot;.</li>
+<li>Se persiste entre sesiones (24 h).</li>
+</ul>
+<h2>Casos de error</h2>
+<p>Pista de la cola no disponible → saltar y notificar; eliminar la pista en reproducción → pasar a la siguiente; cola vacía → estado <code>IDLE</code> con sugerencias.</p>
+<h2>Dependencias</h2>
+<p>Skill 14, 01, 04, 13.</p>
+<h2>Consideraciones técnicas</h2>
+<p>Operaciones puras en <code>domain/queue</code> (fáciles de testear): <code>enqueueNext</code>, <code>enqueueLast</code>, <code>move</code>, <code>remove</code>, <code>shuffle(seed)</code>; sincronización a servidor con debounce (1 s); IDs de ítem únicos para permitir duplicados.</p>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Operaciones cubiertas por tests unitarios de dominio.</li>
+<li><input disabled="" type="checkbox"> Drag &amp; drop persistente y accesible.</li>
+<li><input disabled="" type="checkbox"> Deshacer &quot;Limpiar cola&quot; durante 10 s.</li>
+</ul>
+<hr>
+<h1>Skill: 13 — Music Discovery</h1>
+<h2>Objetivo</h2>
+<p>Página de exploración para encontrar música nueva.</p>
+<h2>Funcionalidades</h2>
+<p>Nuevos lanzamientos, tendencias (global/país), navegación por géneros y &quot;moods&quot;, artistas populares, álbumes destacados, recomendaciones (Skill 11), canciones recientemente agregadas al catálogo, listas editoriales.</p>
+<h2>User Flow</h2>
+<p>Inicio/Explorar → estantes horizontales → clic en tarjeta → detalle; &quot;Ver todo&quot; abre listado con paginación.</p>
+<h2>Componentes</h2>
+<p><code>DiscoveryPage</code>, <code>Shelf</code> (carrusel), <code>GenreGrid</code>, <code>TrendingList</code>, <code>NewReleasesRow</code>, <code>FeaturedAlbumHero</code>, <code>ShelfSkeleton</code>.</p>
+<h2>Estado</h2>
+<p>Consultas independientes por estante para que un fallo no bloquee la página.</p>
+<h2>Datos</h2>
+<p><code>Genre { id, name, parentId?, color }</code>, agregados de tendencias (<code>TrendingSnapshot { scope, entityType, entityId, rank, period }</code>), <code>EditorialCollection</code>.</p>
+<h2>API</h2>
+<ul>
+<li><code>GET /discover/new-releases?country=</code> · <code>GET /discover/trending?scope=global|country&amp;period=day|week</code></li>
+<li><code>GET /genres</code> · <code>GET /genres/:id/tracks|albums|artists</code></li>
+<li><code>GET /discover/featured</code> · <code>GET /discover/recently-added</code></li>
+</ul>
+<h2>Reglas de negocio</h2>
+<ul>
+<li>Nuevos lanzamientos = últimos 30 días.</li>
+<li>Tendencias recalculadas cada hora (crecimiento relativo, no solo volumen).</li>
+<li>Filtrar contenido explícito si el perfil lo indica.</li>
+<li>Contenido localizado por país cuando exista.</li>
+</ul>
+<h2>Casos de error</h2>
+<p>Estante vacío → se oculta; fallo parcial → esa fila muestra error con reintentar; sin red → contenido cacheado.</p>
+<h2>Dependencias</h2>
+<p>Skill 11, 05, 07, 01, 10 (tendencias).</p>
+<h2>Consideraciones técnicas</h2>
+<p>Carga por estantes con <code>IntersectionObserver</code>; snapshots en Redis; CDN con <code>stale-while-revalidate</code>; imágenes con <code>loading=&quot;lazy&quot;</code> y dimensiones fijas (evitar CLS).</p>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Un estante que falla no rompe la página.</li>
+<li><input disabled="" type="checkbox"> Tendencias reflejan datos de las últimas 24 h.</li>
+<li><input disabled="" type="checkbox"> CLS &lt;0.1.</li>
+</ul>
+<hr>
+<h1>Skill: 14 — Audio State Manager</h1>
+<h2>Objetivo</h2>
+<p>Fuente única de verdad del estado global del reproductor.</p>
+<h2>Funcionalidades</h2>
+<p>Manejar <code>currentTrack</code>, <code>queue</code>, <code>currentTime</code>, <code>duration</code>, <code>volume</code>, <code>isPlaying</code>, <code>repeatMode</code>, <code>shuffle</code>, <code>buffering</code>, <code>loading</code>, <code>error</code>; exponer acciones y selectores; sincronizar pestañas/dispositivos.</p>
+<h2>User Flow</h2>
+<p>Cualquier componente despacha acciones (<code>play</code>, <code>seek</code>…); el store actualiza el estado; <code>AudioEngine</code> reacciona y notifica eventos que vuelven como acciones. Flujo unidireccional.</p>
+<h2>Componentes</h2>
+<p><code>playerStore</code> (Zustand), <code>playerMachine</code> (transiciones), <code>AudioEngine</code>, selectores (<code>selectIsPlaying</code>, <code>selectProgress</code>), <code>PlayerSyncService</code>.</p>
+<h2>Estado</h2>
+<p><strong>Estado primario</strong> (no derivable):</p>
+<pre><code class="language-ts">type PlayerState = {
+  status: &#39;IDLE&#39;|&#39;LOADING&#39;|&#39;PLAYING&#39;|&#39;PAUSED&#39;|&#39;BUFFERING&#39;|&#39;ERROR&#39;|&#39;ENDED&#39;;
+  currentTrackId: string | null;
+  queue: QueueState;            // ver Skill 12
+  currentTime: number;          // segundos
+  duration: number;
+  volume: number; muted: boolean;
+  repeatMode: &#39;off&#39;|&#39;all&#39;|&#39;one&#39;;
+  shuffle: boolean;
+  error: PlayerError | null;
+};
+</code></pre>
+<p><strong>Derivados (selectores, no se guardan):</strong> <code>isPlaying = status==='PLAYING'</code>, <code>isBuffering</code>, <code>isLoading</code>, <code>currentTrack</code> (por id desde la caché de entidades), <code>progress = currentTime/duration</code>.</p>
+<h2>Datos</h2>
+<p>Persistencia parcial en <code>localStorage</code>: <code>volume</code>, <code>muted</code>, <code>repeatMode</code>, <code>shuffle</code>, <code>queue</code>, <code>lastPosition</code>.</p>
+<h2>API</h2>
+<p>Interna: <code>play(trackId?, context?)</code>, <code>pause()</code>, <code>toggle()</code>, <code>next()</code>, <code>prev()</code>, <code>seek(t)</code>, <code>setVolume(v)</code>, <code>setRepeat(m)</code>, <code>toggleShuffle()</code>, <code>dispatch(engineEvent)</code>. Externa: <code>PUT /me/playback</code> (sincronización).</p>
+<h2>Reglas de negocio</h2>
+<ul>
+<li>Un único store por aplicación; los componentes no guardan copias de estado del player.</li>
+<li><code>currentTime</code> se actualiza en un slice separado con suscripción selectiva para no re-renderizar todo.</li>
+<li>Toda transición pasa por <code>playerMachine</code>.</li>
+<li><code>currentTrack</code> guarda solo el ID; los datos completos viven en la caché de entidades (normalización).</li>
+</ul>
+<h2>Casos de error</h2>
+<p>Transición inválida → ignorada + log; estado corrupto en <code>localStorage</code> → reset seguro a <code>IDLE</code>; desincronización entre pestañas → gana la pestaña &quot;líder&quot; (Web Locks / BroadcastChannel).</p>
+<h2>Dependencias</h2>
+<p>Base de Skill 01, 03, 10, 12, 15.</p>
+<h2>Consideraciones técnicas</h2>
+<p>Selectores con <code>shallow</code> equality; <code>subscribeWithSelector</code>; tests con motor de audio simulado; DevTools habilitado en desarrollo; evitar <code>useEffect</code> para sincronizar estados derivados.</p>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Ningún estado duplicado (auditoría de código).</li>
+<li><input disabled="" type="checkbox"> La barra de progreso re-renderiza solo su componente.</li>
+<li><input disabled="" type="checkbox"> Recargar la página restaura cola y preferencias.</li>
+</ul>
+<hr>
+<h1>Skill: 15 — Responsive Music Experience</h1>
+<h2>Objetivo</h2>
+<p>Experiencia coherente y optimizada en desktop, laptop, tablet y móvil.</p>
+<h2>Funcionalidades</h2>
+<p>Layouts adaptativos, sidebar/bottom navigation, mini y full player, vista de letras, gestos, dark/light mode, safe areas, orientación.</p>
+<h2>User Flow</h2>
+<p>Desktop: sidebar + contenido + player inferior + panel derecho (cola/letras). Móvil: bottom nav (Inicio, Buscar, Biblioteca) + mini-player sobre la barra → deslizar hacia arriba abre full player → deslizar a otra vista para letras/cola.</p>
+<h2>Componentes</h2>
+<p><code>AppShell</code>, <code>Sidebar</code> (colapsable), <code>BottomNav</code>, <code>MiniPlayer</code>, <code>FullPlayer</code>, <code>LyricsView</code>, <code>RightPanel</code>, <code>useBreakpoint</code>, <code>BottomSheet</code>.</p>
+<h2>Estado</h2>
+<p><code>ui</code>: <code>sidebarCollapsed</code>, <code>rightPanel: 'queue'|'lyrics'|null</code>, <code>fullPlayerOpen</code>, <code>theme</code>.</p>
+<h2>Datos</h2>
+<p>Preferencias de UI en <code>localStorage</code> (y perfil de usuario para sincronizar).</p>
+<h2>API</h2>
+<p><code>PUT /me/preferences</code> (tema, idioma, calidad de audio).</p>
+<h2>Reglas de negocio — Breakpoints y comportamiento</h2>
+<table>
+<thead>
+<tr>
+<th>Dispositivo</th>
+<th>Ancho</th>
+<th>Navegación</th>
+<th>Player</th>
+<th>Letras/Cola</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Móvil</td>
+<td>&lt;640 px</td>
+<td>Bottom nav</td>
+<td>Mini flotante + Full a pantalla completa</td>
+<td>Full-screen, swipe</td>
+</tr>
+<tr>
+<td>Tablet</td>
+<td>640–1023</td>
+<td>Sidebar de iconos</td>
+<td>Barra inferior</td>
+<td>Panel lateral overlay</td>
+</tr>
+<tr>
+<td>Laptop</td>
+<td>1024–1439</td>
+<td>Sidebar 240 px</td>
+<td>Barra inferior</td>
+<td>Panel derecho 320 px</td>
+</tr>
+<tr>
+<td>Desktop</td>
+<td>≥1440</td>
+<td>Sidebar 280 px</td>
+<td>Barra inferior + panel fijo</td>
+<td>Panel derecho 360 px</td>
+</tr>
+</tbody>
+</table>
+<h2>Casos de error</h2>
+<p>Orientación horizontal en móvil → full player en dos columnas; teclado virtual tapa el mini-player → se oculta; pantallas muy estrechas (&lt;320 px) → controles secundarios en menú.</p>
+<h2>Dependencias</h2>
+<p>Todas las Skills con UI; 01, 03, 12.</p>
+<h2>Consideraciones técnicas</h2>
+<p>Mobile-first con CSS container queries; <code>env(safe-area-inset-*)</code>; <code>dvh</code>; targets táctiles ≥44 px; gestos con <code>pointer events</code>; probar en Playwright con múltiples viewports.</p>
+<h2>Criterios de aceptación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Sin scroll horizontal en ningún breakpoint.</li>
+<li><input disabled="" type="checkbox"> Mini-player y full player funcionales en móvil real.</li>
+<li><input disabled="" type="checkbox"> Lighthouse móvil ≥90 en Accesibilidad y Best Practices.</li>
+</ul>
+<hr>
+<h1>Módulos transversales</h1>
+<h2>A. Modelo de datos</h2>
+<h3>Entidades y atributos</h3>
+<table>
+<thead>
+<tr>
+<th>Entidad</th>
+<th>Atributos principales (PK <strong>negrita</strong>, <code>?</code> opcional)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>User</strong></td>
+<td><strong>id</strong>, email (único), passwordHash, displayName, avatarUrl?, country?, birthDate?, role (user|editor|admin), preferences JSONB, createdAt, deletedAt?</td>
+</tr>
+<tr>
+<td><strong>Artist</strong></td>
+<td><strong>id</strong>, name, slug (único), imageUrl?, bio?, country?, careerStartYear?, isGroup, verified, monthlyListeners</td>
+</tr>
+<tr>
+<td><strong>Genre</strong></td>
+<td><strong>id</strong>, name (único), slug, parentId? (auto-referencia), color?</td>
+</tr>
+<tr>
+<td><strong>Album</strong></td>
+<td><strong>id</strong>, title, artistId (FK), type (album|single|ep|compilation), releaseDate, coverUrl, dominantColor?, label?, totalTracks, durationMs</td>
+</tr>
+<tr>
+<td><strong>Track</strong></td>
+<td><strong>id</strong>, title, albumId (FK), discNumber, trackNumber, durationMs, isExplicit, audioKey (ruta S3), isrc? (único), playCount, popularity</td>
+</tr>
+<tr>
+<td><strong>TrackArtist</strong> (N:M)</td>
+<td><strong>trackId, artistId</strong>, role (main|featured|producer)</td>
+</tr>
+<tr>
+<td><strong>ArtistGenre / AlbumGenre / TrackGenre</strong></td>
+<td>pares (entityId, genreId)</td>
+</tr>
+<tr>
+<td><strong>Playlist</strong></td>
+<td><strong>id</strong>, ownerId (FK), name, description?, coverUrl?, isPublic, shareToken?, trackCount, durationMs, createdAt, updatedAt</td>
+</tr>
+<tr>
+<td><strong>PlaylistTrack</strong></td>
+<td><strong>playlistId, position</strong> (o id), trackId (FK), addedAt, addedBy</td>
+</tr>
+<tr>
+<td><strong>Favorite</strong></td>
+<td><strong>userId, entityType, entityId</strong>, createdAt</td>
+</tr>
+<tr>
+<td><strong>Follow</strong></td>
+<td><strong>userId, artistId</strong>, createdAt</td>
+</tr>
+<tr>
+<td><strong>ListeningHistory</strong></td>
+<td><strong>id</strong>, userId, trackId, artistId, albumId, startedAt, playedMs, percentPlayed, completed, source, deviceId?</td>
+</tr>
+<tr>
+<td><strong>Lyrics</strong></td>
+<td><strong>id</strong>, trackId (FK, único por idioma), language, isSynced, source, copyright?</td>
+</tr>
+<tr>
+<td><strong>LyricsLine</strong></td>
+<td><strong>id</strong>, lyricsId (FK), index, startMs?, text</td>
+</tr>
+<tr>
+<td><strong>Queue</strong></td>
+<td><strong>id</strong>, userId (FK), deviceId?, currentIndex, contextType?, contextId?, updatedAt</td>
+</tr>
+<tr>
+<td><strong>QueueItem</strong></td>
+<td><strong>id</strong>, queueId (FK), trackId (FK), position, source</td>
+</tr>
+<tr>
+<td><strong>CareerEvent</strong></td>
+<td><strong>id</strong>, artistId (FK), type, date, datePrecision, title, description?, relatedIds?, sourceUrl?</td>
+</tr>
+<tr>
+<td><strong>SearchHistory</strong></td>
+<td><strong>id</strong>, userId, query, createdAt</td>
+</tr>
+</tbody>
+</table>
+<h3>Relaciones y cardinalidades</h3>
+<pre class="mermaid">erDiagram
+  USER ||--o{ PLAYLIST : &#34;posee (1:N)&#34;
+  USER ||--o{ FAVORITE : &#34;marca (1:N)&#34;
+  USER ||--o{ FOLLOW : &#34;sigue (1:N)&#34;
+  USER ||--o{ LISTENING_HISTORY : &#34;genera (1:N)&#34;
+  USER ||--o| QUEUE : &#34;tiene (1:0..1 por dispositivo)&#34;
+  ARTIST ||--o{ ALBUM : &#34;publica (1:N)&#34;
+  ARTIST ||--o{ FOLLOW : &#34;es seguido (1:N)&#34;
+  ARTIST ||--o{ CAREER_EVENT : &#34;tiene (1:N)&#34;
+  ALBUM ||--|{ TRACK : &#34;contiene (1:N)&#34;
+  TRACK }o--o{ ARTIST : &#34;TrackArtist (N:M)&#34;
+  TRACK }o--o{ GENRE : &#34;TrackGenre (N:M)&#34;
+  TRACK ||--o{ LYRICS : &#34;tiene (1:0..N por idioma)&#34;
+  LYRICS ||--|{ LYRICS_LINE : &#34;contiene (1:N)&#34;
+  PLAYLIST ||--o{ PLAYLIST_TRACK : &#34;incluye (1:N)&#34;
+  TRACK ||--o{ PLAYLIST_TRACK : &#34;aparece (1:N)&#34;
+  QUEUE ||--o{ QUEUE_ITEM : &#34;contiene (1:N)&#34;
+  TRACK ||--o{ LISTENING_HISTORY : &#34;registrada en (1:N)&#34;
+</pre>
+<h3>Índices importantes</h3>
+<ul>
+<li><code>Track</code>: <code>(albumId, discNumber, trackNumber)</code> único; GIN trigram en <code>title_norm</code>; <code>(popularity DESC)</code>.</li>
+<li><code>Artist</code>/<code>Album</code>: GIN trigram en <code>name_norm</code>/<code>title_norm</code>; <code>Album(artistId, releaseDate DESC)</code>.</li>
+<li><code>PlaylistTrack</code>: <code>(playlistId, position)</code> único; <code>(trackId)</code>.</li>
+<li><code>Favorite</code>: PK compuesta + <code>(userId, entityType, createdAt DESC)</code>.</li>
+<li><code>Follow</code>: PK <code>(userId, artistId)</code> + <code>(artistId)</code>.</li>
+<li><code>ListeningHistory</code>: <code>(userId, startedAt DESC)</code>, <code>(userId, trackId)</code>; particionada por mes.</li>
+<li><code>LyricsLine</code>: <code>(lyricsId, index)</code> único; <code>(lyricsId, startMs)</code>.</li>
+<li><code>Playlist</code>: <code>(ownerId, updatedAt DESC)</code>; <code>(isPublic)</code> parcial.</li>
+</ul>
+<h3>Reglas de integridad</h3>
+<ul>
+<li>FKs con <code>ON DELETE</code>: <code>Album→Artist RESTRICT</code>, <code>Track→Album CASCADE</code>, <code>PlaylistTrack→Playlist CASCADE</code>, <code>PlaylistTrack→Track RESTRICT</code> (si un track se retira, se marca <code>isAvailable=false</code>, no se borra).</li>
+<li><code>CHECK (percentPlayed BETWEEN 0 AND 100)</code>, <code>CHECK (durationMs &gt; 0)</code>, <code>CHECK (careerStartYear &lt;= extract(year from now()))</code>.</li>
+<li>Un usuario no puede duplicar <code>Favorite</code> ni <code>Follow</code> (PK compuesta).</li>
+<li>Soft delete en <code>User</code> y <code>Playlist</code> (<code>deletedAt</code>) para restauración y cumplimiento.</li>
+<li>Contadores denormalizados (<code>trackCount</code>, <code>durationMs</code>) actualizados en la misma transacción.</li>
+<li>Unicidad de <code>isrc</code>, <code>slug</code>, <code>email</code> (insensible a mayúsculas).</li>
+</ul>
+<hr>
+<h2>B. Catálogo consolidado de API</h2>
+<p>Base: <code>/api/v1</code>. Autenticación por <code>Authorization: Bearer &lt;accessToken&gt;</code> salvo indicación. 🔓 = público.</p>
+<table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Endpoint</th>
+<th>Descripción</th>
+<th>Recibe</th>
+<th>Devuelve</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/auth/register</code> 🔓</td>
+<td>Crea cuenta</td>
+<td><code>{email,password,displayName}</code></td>
+<td><code>201 {user, tokens}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/auth/login</code> 🔓</td>
+<td>Inicia sesión</td>
+<td><code>{email,password}</code></td>
+<td><code>{accessToken}</code> + cookie refresh HttpOnly</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/auth/refresh</code></td>
+<td>Rota refresh token</td>
+<td>cookie</td>
+<td>nuevo access token</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/auth/logout</code></td>
+<td>Revoca sesión</td>
+<td>—</td>
+<td><code>204</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/tracks</code> 🔓</td>
+<td>Lista canciones</td>
+<td><code>?genre,artistId,albumId,sort,limit,cursor</code></td>
+<td><code>{items[], nextCursor}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/tracks/:id</code> 🔓</td>
+<td>Detalle de canción</td>
+<td>—</td>
+<td>Track + artistas + álbum</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/tracks/:id/stream</code></td>
+<td>URL firmada de audio</td>
+<td>—</td>
+<td><code>{url, expiresAt}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/tracks/:id/similar</code></td>
+<td>Pistas similares</td>
+<td><code>?limit</code></td>
+<td><code>Track[]</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/artists/:id</code> 🔓</td>
+<td>Perfil de artista</td>
+<td>—</td>
+<td>Artist + contadores</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/artists/:id/albums</code> 🔓</td>
+<td>Discografía</td>
+<td><code>?type,cursor</code></td>
+<td><code>Album[]</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/artists/:id/top-tracks</code> 🔓</td>
+<td>Canciones populares</td>
+<td>—</td>
+<td><code>Track[]</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/artists/:id/related</code> 🔓</td>
+<td>Artistas relacionados</td>
+<td>—</td>
+<td><code>Artist[]</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/artists/:id/timeline</code> 🔓</td>
+<td>Trayectoria</td>
+<td><code>?type,from,to</code></td>
+<td><code>CareerEvent[]</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/albums/:id</code> 🔓</td>
+<td>Detalle de álbum</td>
+<td>—</td>
+<td>Album + pistas + top tracks</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/search</code> 🔓</td>
+<td>Búsqueda unificada</td>
+<td><code>?q,type,filters,sort</code></td>
+<td>resultados agrupados</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/search/suggest</code> 🔓</td>
+<td>Autocomplete</td>
+<td><code>?q</code></td>
+<td>sugerencias</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/lyrics/:trackId</code> 🔓</td>
+<td>Letra</td>
+<td>—</td>
+<td>letra + líneas o <code>404</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/playlists</code></td>
+<td>Playlists propias</td>
+<td><code>?cursor</code></td>
+<td><code>Playlist[]</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/playlists</code></td>
+<td>Crear</td>
+<td><code>{name,description?,isPublic?}</code></td>
+<td><code>201 Playlist</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/playlists/:id</code></td>
+<td>Detalle (dueño o pública)</td>
+<td>—</td>
+<td>Playlist + pistas paginadas</td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/playlists/:id</code></td>
+<td>Editar</td>
+<td>campos parciales</td>
+<td>Playlist</td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/playlists/:id</code></td>
+<td>Eliminar</td>
+<td>—</td>
+<td><code>204</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/playlists/:id/tracks</code></td>
+<td>Añadir pistas</td>
+<td><code>{trackIds[],position?}</code></td>
+<td>Playlist actualizada</td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/playlists/:id/tracks/:trackId</code></td>
+<td>Quitar pista</td>
+<td>—</td>
+<td><code>204</code></td>
+</tr>
+<tr>
+<td>PATCH</td>
+<td><code>/playlists/:id/tracks/order</code></td>
+<td>Reordenar</td>
+<td><code>{trackId,newPosition}</code></td>
+<td><code>204</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/playlists/:id/duplicate</code></td>
+<td>Duplicar</td>
+<td>—</td>
+<td><code>201 Playlist</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/history</code></td>
+<td>Historial</td>
+<td><code>?cursor</code></td>
+<td><code>ListeningHistory[]</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/history</code></td>
+<td>Registrar escuchas (lote)</td>
+<td><code>{events[]}</code></td>
+<td><code>202</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/stats/top</code></td>
+<td>Tops personales</td>
+<td><code>?entity,range</code></td>
+<td>ranking</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/me/queue</code> · <code>PUT /me/queue</code></td>
+<td>Leer/guardar cola</td>
+<td>Queue</td>
+<td>Queue</td>
+</tr>
+<tr>
+<td>PUT/DELETE</td>
+<td><code>/me/favorites/:type/:id</code></td>
+<td>(Des)marcar favorito</td>
+<td>—</td>
+<td><code>204</code></td>
+</tr>
+<tr>
+<td>PUT/DELETE</td>
+<td><code>/me/following/artists/:id</code></td>
+<td>(Dejar de) seguir</td>
+<td>—</td>
+<td><code>204</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/me/library</code></td>
+<td>Biblioteca</td>
+<td><code>?type,sort,q</code></td>
+<td>items paginados</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/recommendations</code></td>
+<td>Recomendaciones</td>
+<td>—</td>
+<td>secciones</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/recommendations/feedback</code></td>
+<td>Feedback</td>
+<td><code>{entityType,entityId,action}</code></td>
+<td><code>204</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/discover/*</code> 🔓</td>
+<td>Nuevos, tendencias, destacados</td>
+<td>filtros</td>
+<td>listas</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/genres</code> 🔓</td>
+<td>Géneros</td>
+<td>—</td>
+<td><code>Genre[]</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Códigos:</strong> <code>200/201/204</code>, <code>400</code> validación, <code>401</code> sin sesión, <code>403</code> sin permiso, <code>404</code>, <code>409</code> conflicto, <code>413/415</code> archivos, <code>422</code> semántica, <code>429</code> rate limit, <code>5xx</code>.</p>
+<hr>
+<h2>C. Seguridad</h2>
+<ul>
+<li><strong>Autenticación:</strong> contraseñas con Argon2id; access token JWT de 15 min (claims mínimos: <code>sub</code>, <code>role</code>, <code>jti</code>) + refresh token opaco de 30 días en cookie <code>HttpOnly; Secure; SameSite=Lax</code>, rotado en cada uso con detección de reutilización. MFA opcional (V2). OAuth (Google/Apple) como mejora.</li>
+<li><strong>Autorización:</strong> RBAC (<code>user</code>, <code>editor</code>, <code>admin</code>) + verificación de propiedad por recurso (<code>playlist.ownerId === user.id</code>) en un guard/policy reutilizable; denegar por defecto.</li>
+<li><strong>Protección de endpoints:</strong> guards globales; rutas públicas listadas explícitamente; CORS restringido a orígenes conocidos; CSRF mitigado con SameSite + cabecera personalizada en mutaciones.</li>
+<li><strong>Validación de entradas:</strong> esquemas (Zod/class-validator) en cada endpoint; listas blancas de campos de ordenamiento; límites de tamaño y longitud; IDs validados como UUID.</li>
+<li><strong>Rate limiting (Redis, sliding window):</strong> login 5/min/IP+email; búsqueda 60/min/usuario; escrituras 120/min; <code>/history</code> por lote; bloqueo temporal progresivo.</li>
+<li><strong>XSS:</strong> React escapa por defecto; prohibido <code>dangerouslySetInnerHTML</code> (letras y biografías se renderizan como texto o Markdown sanitizado con DOMPurify); CSP estricta (<code>default-src 'self'</code>, <code>img-src</code> CDN, sin <code>unsafe-inline</code>); <code>X-Content-Type-Options</code>, <code>Referrer-Policy</code>.</li>
+<li><strong>SQL Injection:</strong> consultas parametrizadas / ORM (Prisma, TypeORM); nunca concatenar SQL; el rol de BD de la aplicación sin privilegios DDL.</li>
+<li><strong>Manejo seguro de archivos:</strong> portadas y avatares: validar MIME real (magic bytes), máx. 5 MB, re-encode (elimina metadatos y payloads), nombre generado (UUID), almacenamiento fuera del webroot, antivirus opcional; audio servido por URL firmada de corta duración, sin listado de bucket.</li>
+<li><strong>Control de permisos de contenido:</strong> playlists privadas no indexables; enlaces de compartir con token revocable.</li>
+<li><strong>Privacidad:</strong> cumplimiento de GDPR/Ley 1581 (Colombia): consentimiento, exportación y eliminación de datos, pausar historial.</li>
+<li><strong>Operación:</strong> secretos en variables/secret manager, dependencias auditadas (<code>npm audit</code>, Dependabot), logs sin datos sensibles, HTTPS + HSTS, backups cifrados.</li>
+</ul>
+<hr>
+<h2>D. Rendimiento</h2>
+<table>
+<thead>
+<tr>
+<th>Técnica</th>
+<th>Aplicación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lazy loading</td>
+<td>Rutas con <code>React.lazy</code>; estantes con <code>IntersectionObserver</code>; imágenes <code>loading=&quot;lazy&quot;</code></td>
+</tr>
+<tr>
+<td>Caching</td>
+<td>TanStack Query (<code>staleTime</code>), CDN para imágenes/audio, Redis para tendencias/recomendaciones/sugerencias, ETag en catálogo</td>
+</tr>
+<tr>
+<td>Debouncing</td>
+<td>Búsqueda 250 ms + <code>AbortController</code>; sincronización de cola 1 s; posición de reproducción cada 15 s</td>
+</tr>
+<tr>
+<td>Paginación</td>
+<td>Cursor en todas las listas (<code>limit ≤ 50</code>)</td>
+</tr>
+<tr>
+<td>Virtualización</td>
+<td>Playlists, biblioteca, historial, resultados (TanStack Virtual)</td>
+</tr>
+<tr>
+<td>Imágenes</td>
+<td>WebP/AVIF, <code>srcset</code> (64/128/300/640 px), placeholders de color dominante</td>
+</tr>
+<tr>
+<td>Audio</td>
+<td>HLS/AAC 96–256 kbps adaptativo; precarga de la siguiente pista al 80 %; Range requests</td>
+</tr>
+<tr>
+<td>Requests mínimos</td>
+<td>Endpoints agregados (<code>/library</code>, <code>/albums/:id</code>), consultas en lote (<code>favorites/check</code>), deduplicación de queries</td>
+</tr>
+<tr>
+<td>Estado global</td>
+<td>Selectores granulares, slice separado para <code>currentTime</code>, normalización de entidades</td>
+</tr>
+<tr>
+<td>Presupuesto</td>
+<td>JS inicial &lt;200 KB gz, LCP &lt;2.5 s, INP &lt;200 ms, CLS &lt;0.1</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>E. UX/UI</h2>
+<ul>
+<li><strong>Identidad:</strong> paleta oscura por defecto (fondo <code>#0B0B10</code>, superficies <code>#15151D</code>), acento vibrante (p. ej. violeta→cian), tipografía geométrica (Inter/Manrope), esquinas redondeadas 12 px, portada como protagonista.</li>
+<li><strong>Elementos:</strong> sidebar, header con búsqueda central, tarjetas de álbum/artista con hover que revela botón play, player inferior con progreso, panel derecho contextual, full player con degradado del color dominante de la portada.</li>
+<li><strong>Microinteracciones:</strong> ecualizador animado en la pista en curso, transición suave de portada, corazón con animación, drag con sombra.</li>
+<li><strong>Skeleton loading</strong> en cada estante y lista; <strong>empty states</strong> ilustrados con acción (&quot;Crea tu primera playlist&quot;); <strong>error states</strong> con reintento; <strong>toasts</strong> no bloqueantes con &quot;Deshacer&quot;; <strong>modal</strong> &quot;Añadir a playlist&quot; con búsqueda, checkboxes múltiples y &quot;Nueva playlist&quot;.</li>
+<li><strong>Accesibilidad:</strong> contraste AA, foco visible, atajos de teclado, <code>prefers-reduced-motion</code>, etiquetas ARIA.</li>
+<li><strong>Dark/Light mode</strong> por tokens CSS y <code>prefers-color-scheme</code>.</li>
+</ul>
+<hr>
+<h1>Skills adicionales propuestas (10)</h1>
+<h2>A1 — Crossfade y Audio Avanzado</h2>
+<ol>
+<li><strong>Objetivo:</strong> transiciones fluidas y calidad de audio configurable.</li>
+<li><strong>Problema:</strong> silencios entre pistas y ajustes de volumen dispares.</li>
+<li><strong>Funcionalidades:</strong> crossfade (0–12 s), gapless para álbumes en vivo/continuos, normalización de volumen (ReplayGain/LUFS), ecualizador de 5–10 bandas, selector de calidad.</li>
+<li><strong>Componentes:</strong> <code>AudioSettingsPanel</code>, <code>Equalizer</code>, <code>CrossfadeController</code>, Web Audio <code>GainNode</code>/<code>BiquadFilter</code>.</li>
+<li><strong>Datos:</strong> <code>UserPreferences.audio {crossfadeMs, eqPreset, quality}</code>, <code>Track.loudnessLufs</code>.</li>
+<li><strong>Endpoints:</strong> <code>PUT /me/preferences</code>; <code>GET /tracks/:id/stream?quality=</code>.</li>
+<li><strong>Dependencias:</strong> Skill 01, 14, 15.</li>
+<li><strong>Complejidad:</strong> Media.</li>
+<li><strong>Mejoras futuras:</strong> audio espacial, EQ automático por auriculares.</li>
+</ol>
+<h2>A2 — Radio / Estaciones Inteligentes</h2>
+<ol>
+<li><strong>Objetivo:</strong> reproducción infinita a partir de una semilla.</li>
+<li><strong>Problema:</strong> al terminar la cola el usuario debe buscar más música.</li>
+<li><strong>Funcionalidades:</strong> radio por canción/artista/género, autoplay al acabar la cola, ajuste &quot;más familiar / más descubrimiento&quot;.</li>
+<li><strong>Componentes:</strong> <code>RadioStartButton</code>, <code>RadioQueueFeeder</code>, <code>RadioControls</code>.</li>
+<li><strong>Datos:</strong> <code>RadioSession {userId, seedType, seedId, exploration}</code>, vectores de similitud.</li>
+<li><strong>Endpoints:</strong> <code>POST /radio</code> <code>{seedType,seedId}</code>, <code>GET /radio/:id/next?count=</code>.</li>
+<li><strong>Dependencias:</strong> 11, 12, 01.</li>
+<li><strong>Complejidad:</strong> Media.</li>
+<li><strong>Mejoras futuras:</strong> radio contextual (hora/actividad), DJ con voz IA.</li>
+</ol>
+<h2>A3 — Modo Offline y Descargas (PWA)</h2>
+<ol>
+<li><strong>Objetivo:</strong> escuchar sin conexión.</li>
+<li><strong>Problema:</strong> dependencia de red estable.</li>
+<li><strong>Funcionalidades:</strong> instalar PWA, descargar pistas/álbumes/playlists, gestor de almacenamiento, sincronización al reconectar, licencias con caducidad.</li>
+<li><strong>Componentes:</strong> <code>DownloadManager</code>, <code>OfflineBanner</code>, Service Worker, <code>StorageMeter</code>.</li>
+<li><strong>Datos:</strong> <code>Download {trackId,status,sizeBytes,licenseExp}</code>, audio cifrado en IndexedDB/Cache Storage.</li>
+<li><strong>Endpoints:</strong> <code>POST /me/downloads</code>, <code>GET /tracks/:id/offline-license</code>.</li>
+<li><strong>Dependencias:</strong> 08, 01, 14.</li>
+<li><strong>Complejidad:</strong> Alta.</li>
+<li><strong>Mejoras futuras:</strong> descarga automática de favoritas por Wi-Fi, prefetch predictivo.</li>
+</ol>
+<h2>A4 — Social y Compartir</h2>
+<ol>
+<li><strong>Objetivo:</strong> convertir la escucha en experiencia social.</li>
+<li><strong>Problema:</strong> el producto es solitario; poca viralidad.</li>
+<li><strong>Funcionalidades:</strong> perfiles públicos, seguir usuarios, actividad de amigos, compartir pista/álbum con tarjeta visual y deep link, playlists colaborativas.</li>
+<li><strong>Componentes:</strong> <code>UserProfilePage</code>, <code>FriendActivityFeed</code>, <code>ShareCardGenerator</code>, <code>CollaboratorsDialog</code>.</li>
+<li><strong>Datos:</strong> <code>UserFollow</code>, <code>PlaylistCollaborator</code>, <code>ActivityEvent</code>, ajustes de privacidad.</li>
+<li><strong>Endpoints:</strong> <code>GET /users/:id</code>, <code>PUT /me/following/users/:id</code>, <code>GET /me/feed</code>, <code>POST /playlists/:id/collaborators</code>.</li>
+<li><strong>Dependencias:</strong> 04, 09, 10.</li>
+<li><strong>Complejidad:</strong> Alta.</li>
+<li><strong>Mejoras futuras:</strong> sesiones de escucha grupal (Jam), reacciones y comentarios.</li>
+</ol>
+<h2>A5 — Escucha Conjunta en Tiempo Real (Listening Rooms)</h2>
+<ol>
+<li><strong>Objetivo:</strong> escuchar sincronizado con otras personas.</li>
+<li><strong>Problema:</strong> no hay forma de compartir el momento a distancia.</li>
+<li><strong>Funcionalidades:</strong> salas por invitación, cola compartida con votos, sincronización de posición, chat ligero.</li>
+<li><strong>Componentes:</strong> <code>RoomView</code>, <code>SharedQueue</code>, <code>PresenceList</code>, <code>SyncClient</code> (WebSocket).</li>
+<li><strong>Datos:</strong> <code>Room {id,hostId,queue,state,createdAt}</code>, <code>RoomMember</code>.</li>
+<li><strong>Endpoints:</strong> <code>POST /rooms</code>, <code>POST /rooms/:id/join</code>, WebSocket <code>/ws/rooms/:id</code>.</li>
+<li><strong>Dependencias:</strong> 12, 14, A4.</li>
+<li><strong>Complejidad:</strong> Alta.</li>
+<li><strong>Mejoras futuras:</strong> roles (DJ/oyente), reproducción con retardo compensado.</li>
+</ol>
+<h2>A6 — Wrapped / Estadísticas Avanzadas</h2>
+<ol>
+<li><strong>Objetivo:</strong> insights atractivos del hábito de escucha.</li>
+<li><strong>Problema:</strong> las estadísticas básicas no generan engagement.</li>
+<li><strong>Funcionalidades:</strong> resumen anual/mensual, minutos escuchados, géneros, &quot;personalidad musical&quot;, mapa de horarios, tarjetas compartibles.</li>
+<li><strong>Componentes:</strong> <code>WrappedStory</code>, <code>ListeningHeatmap</code>, <code>GenreDonut</code>, <code>ShareableStatsCard</code>.</li>
+<li><strong>Datos:</strong> agregados de <code>ListeningHistory</code> (materializados), <code>UserStatsSnapshot</code>.</li>
+<li><strong>Endpoints:</strong> <code>GET /stats/summary?period=</code>, <code>GET /stats/heatmap</code>, <code>GET /stats/wrapped/:year</code>.</li>
+<li><strong>Dependencias:</strong> 10, 06 (géneros), A4.</li>
+<li><strong>Complejidad:</strong> Media.</li>
+<li><strong>Mejoras futuras:</strong> comparación con amigos, logros y rachas.</li>
+</ol>
+<h2>A7 — Búsqueda por Voz, Letra y Reconocimiento</h2>
+<ol>
+<li><strong>Objetivo:</strong> encontrar música cuando no se sabe el nombre.</li>
+<li><strong>Problema:</strong> búsqueda limitada a texto exacto.</li>
+<li><strong>Funcionalidades:</strong> dictado por voz (Web Speech API), búsqueda por fragmento de letra, &quot;¿qué suena?&quot; (reconocimiento con servicio de terceros), búsqueda por mood.</li>
+<li><strong>Componentes:</strong> <code>VoiceSearchButton</code>, <code>LyricsSearchTab</code>, <code>RecognizeDialog</code>.</li>
+<li><strong>Datos:</strong> índice de texto completo de <code>LyricsLine</code>, embeddings opcionales.</li>
+<li><strong>Endpoints:</strong> <code>GET /search/lyrics?q=</code>, <code>POST /recognize</code> (audio).</li>
+<li><strong>Dependencias:</strong> 02, 03.</li>
+<li><strong>Complejidad:</strong> Media–Alta.</li>
+<li><strong>Mejoras futuras:</strong> tararear para buscar, búsqueda semántica con lenguaje natural.</li>
+</ol>
+<h2>A8 — Gestión de Contenido y Panel Editorial (Admin)</h2>
+<ol>
+<li><strong>Objetivo:</strong> administrar catálogo, biografías, líneas de tiempo y colecciones.</li>
+<li><strong>Problema:</strong> sin herramienta, los datos se cargan a mano en BD.</li>
+<li><strong>Funcionalidades:</strong> CRUD de artistas/álbumes/pistas, carga y validación de audio, edición de letras sincronizadas (editor LRC), curaduría de listas, moderación, auditoría.</li>
+<li><strong>Componentes:</strong> <code>AdminDashboard</code>, <code>CatalogEditor</code>, <code>LrcEditor</code>, <code>UploadPipeline</code>, <code>ModerationQueue</code>.</li>
+<li><strong>Datos:</strong> <code>AuditLog</code>, <code>IngestJob</code>, estados de publicación (draft/published).</li>
+<li><strong>Endpoints:</strong> <code>/admin/artists|albums|tracks|lyrics|collections</code> (CRUD), <code>POST /admin/uploads</code>.</li>
+<li><strong>Dependencias:</strong> 05, 06, 07, 03; Seguridad (RBAC).</li>
+<li><strong>Complejidad:</strong> Alta.</li>
+<li><strong>Mejoras futuras:</strong> importación masiva desde distribuidores (DDEX), detección de duplicados.</li>
+</ol>
+<h2>A9 — Onboarding y Personalización Inicial</h2>
+<ol>
+<li><strong>Objetivo:</strong> resolver el <em>cold start</em> y activar al usuario rápido.</li>
+<li><strong>Problema:</strong> un usuario nuevo ve recomendaciones genéricas.</li>
+<li><strong>Funcionalidades:</strong> elegir géneros y artistas favoritos, importar desde otras plataformas (CSV/URL), idioma, país, preferencias de contenido explícito, tour de la app.</li>
+<li><strong>Componentes:</strong> <code>OnboardingWizard</code>, <code>GenrePicker</code>, <code>ArtistPicker</code>, <code>ImportPlaylistDialog</code>.</li>
+<li><strong>Datos:</strong> <code>UserPreferences</code>, señales iniciales (<code>Follow</code>, <code>Favorite</code> implícitos).</li>
+<li><strong>Endpoints:</strong> <code>POST /me/onboarding</code>, <code>GET /onboarding/suggested-artists</code>, <code>POST /import/playlist</code>.</li>
+<li><strong>Dependencias:</strong> 11, 09, 13.</li>
+<li><strong>Complejidad:</strong> Baja.</li>
+<li><strong>Mejoras futuras:</strong> onboarding adaptativo por respuestas, importar historial.</li>
+</ol>
+<h2>A10 — Analítica de Producto, Observabilidad y Calidad de Reproducción</h2>
+<ol>
+<li><strong>Objetivo:</strong> medir salud técnica y uso real del producto.</li>
+<li><strong>Problema:</strong> sin métricas no se detectan cortes, latencias ni funciones sin uso.</li>
+<li><strong>Funcionalidades:</strong> métricas QoE (tiempo a primer audio, rebuffer ratio, tasa de errores), eventos de producto, logs estructurados, trazas, alertas, dashboards, feature flags y A/B tests.</li>
+<li><strong>Componentes:</strong> <code>AnalyticsService</code>, <code>PlaybackQoEReporter</code>, <code>FeatureFlagProvider</code>, dashboards (Grafana), Sentry.</li>
+<li><strong>Datos:</strong> <code>PlaybackQoE {sessionId,startupMs,rebufferCount,errorCode}</code>, <code>AnalyticsEvent</code>.</li>
+<li><strong>Endpoints:</strong> <code>POST /telemetry/events</code>, <code>POST /telemetry/qoe</code>, <code>GET /flags</code>.</li>
+<li><strong>Dependencias:</strong> 01, 14, 11 (A/B), todas las demás.</li>
+<li><strong>Complejidad:</strong> Media.</li>
+<li><strong>Mejoras futuras:</strong> detección automática de anomalías, <em>session replay</em> con consentimiento.</li>
+</ol>
+<hr>
+<h1>Documentos de arquitectura</h1>
+<h2>Arquitectura general</h2>
+<pre class="mermaid">flowchart TB
+  subgraph Cliente[&#34;Cliente Web (React + TS)&#34;]
+    UI[UI / Design System] --&gt; Comp[Components compartidos]
+    Comp --&gt; Feat[Features: player, search, lyrics, playlists, artist, library...]
+    Feat --&gt; Store[State: Zustand + TanStack Query]
+    Feat --&gt; Dom[Domain: entidades y reglas puras]
+    Store --&gt; Svc[Services: AudioEngine, HistoryTracker, Sync]
+    Svc --&gt; ApiC[API client]
+  end
+  ApiC --&gt;|HTTPS / WebSocket| GW[API Gateway + Rate limit + Auth]
+  subgraph Backend[&#34;Backend (NestJS, módulos por Skill)&#34;]
+    GW --&gt; Ctl[Controllers]
+    Ctl --&gt; App[Application services]
+    App --&gt; DomB[Domain]
+    App --&gt; Repo[Repositories / Data access]
+  end
+  Repo --&gt; PG[(PostgreSQL)]
+  App --&gt; Redis[(Redis: caché, colas, rate limit)]
+  App --&gt; Search[(Meilisearch - V2)]
+  App --&gt; S3[(Object storage + CDN)]
+  Jobs[Workers: recomendaciones, tendencias, stats, imágenes] --&gt; PG
+  Jobs --&gt; Redis
+  ML[Servicio ML - V2/V3] --&gt; PG
+</pre>
+<h2>Mapa de Skills</h2>
+<pre class="mermaid">flowchart LR
+  S14[14 Audio State] --&gt; S01[01 Player]
+  S12[12 Queue] --&gt; S14
+  S01 --&gt; S03[03 Lyrics]
+  S01 --&gt; S10[10 History]
+  S10 --&gt; S11[11 Recommendations]
+  S09[09 Favorites] --&gt; S11
+  S04[04 Playlists] --&gt; S11
+  S11 --&gt; S13[13 Discovery]
+  S02[02 Search] --&gt; S05[05 Artist]
+  S02 --&gt; S07[07 Album]
+  S05 --&gt; S06[06 Timeline]
+  S05 --&gt; S07
+  S08[08 Library] --&gt; S04
+  S08 --&gt; S09
+  S08 --&gt; S10
+  S15[15 Responsive] -.envuelve.-&gt; S01
+  S15 -.-&gt; S03
+  S15 -.-&gt; S12
+</pre>
+<table>
+<thead>
+<tr>
+<th>Capa</th>
+<th>Skills</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Núcleo de reproducción</td>
+<td>14, 01, 12, 03</td>
+</tr>
+<tr>
+<td>Catálogo</td>
+<td>02, 05, 06, 07, 13</td>
+</tr>
+<tr>
+<td>Personal</td>
+<td>04, 08, 09, 10</td>
+</tr>
+<tr>
+<td>Inteligencia</td>
+<td>11</td>
+</tr>
+<tr>
+<td>Experiencia</td>
+<td>15</td>
+</tr>
+</tbody>
+</table>
+<h2>Modelo de entidades</h2>
+<p>Ver el diagrama ER y las tablas de la sección <strong>A. Modelo de datos</strong>.</p>
+<h2>Flujo principal de reproducción</h2>
+<pre class="mermaid">sequenceDiagram
+  actor U as Usuario
+  participant UI as UI (TrackRow)
+  participant ST as playerStore
+  participant Q as Queue
+  participant API as API
+  participant AE as AudioEngine
+  participant H as HistoryTracker
+  U-&gt;&gt;UI: Clic en Play
+  UI-&gt;&gt;ST: play(trackId, contexto)
+  ST-&gt;&gt;Q: construir cola
+  ST-&gt;&gt;ST: status = LOADING
+  ST-&gt;&gt;API: GET /tracks/:id/stream
+  API--&gt;&gt;ST: URL firmada
+  ST-&gt;&gt;AE: load(url) + play()
+  AE--&gt;&gt;ST: canplay → PLAYING
+  loop cada ~250 ms
+    AE--&gt;&gt;ST: timeupdate (currentTime)
+  end
+  AE--&gt;&gt;H: playedMs acumulado
+  Note over AE,ST: al 80 % se precarga la siguiente pista
+  AE--&gt;&gt;ST: ended → ENDED
+  ST-&gt;&gt;Q: next()
+  H-&gt;&gt;API: POST /history (si escucha válida)
+</pre>
+<h2>Flujo de búsqueda</h2>
+<pre class="mermaid">flowchart TD
+  A[Usuario escribe] --&gt; B{≥2 caracteres?}
+  B -- No --&gt; R[Mostrar búsquedas recientes]
+  B -- Sí --&gt; C[Debounce 250 ms]
+  C --&gt; D[Cancelar petición anterior]
+  D --&gt; E[GET /search/suggest]
+  E --&gt; F[Mostrar sugerencias]
+  F --&gt; G{Enter o selección}
+  G --&gt; H[GET /search con filtros y orden]
+  H --&gt; I{¿Resultados?}
+  I -- Sí --&gt; J[Secciones: Mejor resultado, Canciones, Artistas, Álbumes, Playlists]
+  I -- No --&gt; K[Estado vacío + ¿Quisiste decir? + Discovery]
+  H -- Error --&gt; L[Estado de error + reintentar]
+  J --&gt; M[POST /me/search-history]
+</pre>
+<h2>Flujo de creación de playlist</h2>
+<pre class="mermaid">flowchart TD
+  A[Añadir a playlist en una pista] --&gt; B[Modal AddToPlaylist]
+  B --&gt; C{¿Playlist existente?}
+  C -- Sí --&gt; D[Seleccionar una o varias]
+  C -- No --&gt; E[Crear nueva: nombre + visibilidad]
+  E --&gt; F[POST /playlists]
+  D --&gt; G[POST /playlists/:id/tracks]
+  F --&gt; G
+  G --&gt; H{¿Duplicada?}
+  H -- Sí --&gt; I[Aviso: ya está. ¿Añadir de todos modos?]
+  H -- No --&gt; J[Actualización optimista + toast con Deshacer]
+  I --&gt; J
+  J --&gt; K[Invalidar caché de playlist y biblioteca]
+  K --&gt; L[Opcional: editar portada, descripción, reordenar]
+</pre>
+<h2>Flujo de consulta de letras</h2>
+<pre class="mermaid">sequenceDiagram
+  actor U as Usuario
+  participant P as Player
+  participant L as LyricsPanel
+  participant API as API
+  P-&gt;&gt;L: cambia currentTrack
+  L-&gt;&gt;API: GET /lyrics/:trackId
+  alt existe y sincronizada
+    API--&gt;&gt;L: líneas con startMs
+    loop currentTime
+      L-&gt;&gt;L: búsqueda binaria de línea activa
+      L-&gt;&gt;L: resaltar + scroll automático
+    end
+    U-&gt;&gt;L: scroll manual
+    L-&gt;&gt;L: auto-scroll OFF + botón &#34;Sincronizar&#34;
+    U-&gt;&gt;L: clic en Sincronizar
+    L-&gt;&gt;L: auto-scroll ON hacia línea activa
+  else existe sin timestamps
+    API--&gt;&gt;L: texto plano
+  else 404
+    L--&gt;&gt;U: &#34;Letra no disponible&#34;
+  end
+</pre>
+<h2>Flujo de perfil y trayectoria del artista</h2>
+<pre class="mermaid">flowchart TD
+  A[Clic en artista] --&gt; B[GET /artists/:id + top-tracks]
+  B --&gt; C[Cabecera + populares con skeleton]
+  C --&gt; D[Pestañas]
+  D --&gt; E[Discografía: GET /artists/:id/albums por tipo]
+  D --&gt; F[Sobre el artista: bio, país, género, inicio]
+  D --&gt; G[Trayectoria: GET /artists/:id/timeline + /evolution]
+  G --&gt; H[Línea temporal con filtros]
+  H --&gt; I[Hito → tarjeta → álbum/canción/escuchar época]
+  C --&gt; J[Seguir artista: PUT /me/following/artists/:id]
+  C --&gt; K[Artistas relacionados]
+</pre>
+<h2>Flujo de recomendaciones</h2>
+<pre class="mermaid">flowchart LR
+  subgraph Ingesta
+    H[Historial] --&gt; SC[SignalCollector]
+    F[Favoritos/Follows] --&gt; SC
+    P[Playlists] --&gt; SC
+    T[Hora/contexto] --&gt; SC
+  end
+  SC --&gt; CG[Generador de candidatos: co-ocurrencia, ALS, similitud de audio]
+  CG --&gt; RK[Ranker: score personalizado]
+  RK --&gt; DV[Diversificador y filtros: repetidos, explícito, feedback]
+  DV --&gt; EX[ExplanationBuilder: razón]
+  EX --&gt; CA[(Caché Redis por sección)]
+  CA --&gt; API[GET /recommendations]
+  API --&gt; UIr[Discovery / Home]
+  UIr --&gt;|like, dislike, skip| FB[Feedback] --&gt; SC
+</pre>
+<hr>
+<h1>Roadmap de desarrollo</h1>
+<table>
+<thead>
+<tr>
+<th>Fase</th>
+<th>Duración estimada</th>
+<th>Alcance</th>
+<th>Skills</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>MVP</strong></td>
+<td>8–10 semanas</td>
+<td>Núcleo usable de extremo a extremo con catálogo semilla</td>
+<td>14, 01, 12 (básica), 02 (Postgres trigram), 07, 05 (sin timeline), 04 (CRUD + añadir/quitar), 09, 08 (básica), 10 (registro y &quot;recientes&quot;), 15 (desktop + móvil básico), Auth, seguridad base</td>
+</tr>
+<tr>
+<td><strong>V1</strong></td>
+<td>6–8 semanas</td>
+<td>Experiencia completa y pulida</td>
+<td>03 Lyrics, 06 Timeline, 13 Discovery, 12 completa (guardar cola), 04 drag &amp; drop/compartir/duplicar, 10 estadísticas, 11 (reglas SQL), 02 filtros/historial, A9 Onboarding, A10 analítica, rendimiento (virtualización, caché)</td>
+</tr>
+<tr>
+<td><strong>V2</strong></td>
+<td>8–10 semanas</td>
+<td>Inteligencia y escala</td>
+<td>11 con filtrado colaborativo, 02 con Meilisearch, A1 Crossfade/EQ, A2 Radio, A6 Wrapped, A8 Panel editorial, sincronización multi-dispositivo en tiempo real, HLS adaptativo</td>
+</tr>
+<tr>
+<td><strong>V3</strong></td>
+<td>10+ semanas</td>
+<td>Diferenciación y ecosistema</td>
+<td>A3 Offline/PWA, A4 Social, A5 Listening Rooms, A7 Búsqueda por voz/letra, 11 con embeddings + <code>pgvector</code>, apps nativas/desktop, monetización (suscripciones)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Hitos de calidad por fase:</strong> cobertura ≥70 % en dominio (MVP) → 80 % (V1); tests E2E de flujos críticos (reproducir, buscar, crear playlist) desde MVP; pruebas de carga (k6) desde V1; auditoría de seguridad (OWASP ASVS nivel 2) antes de V2.</p>
+<p><strong>Riesgos principales:</strong> licencias de audio y letras (usar catálogo propio/Creative Commons/APIs con acuerdo en el MVP), costos de streaming/CDN, calidad de metadatos, complejidad de sincronización multi-dispositivo, privacidad de datos de escucha.</p>
+<p><strong>Catálogo de arranque sugerido para el proyecto académico:</strong> Free Music Archive, Jamendo API o Internet Archive (música con licencias abiertas), y MusicBrainz/Wikidata para metadatos de artistas y trayectoria.</p>
+
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="/_runtime/mermaid-11.16.1.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+</body></html>

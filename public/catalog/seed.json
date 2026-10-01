@@ -1,0 +1,658 @@
+{
+  "genres": [
+    "Rock",
+    "Pop",
+    "Jazz",
+    "Classical",
+    "Electronic",
+    "Hip-Hop",
+    "Folk",
+    "Blues",
+    "R&B",
+    "Country"
+  ],
+  "artists": [
+    {
+      "id": "artist_01",
+      "name": "Artista A",
+      "country": "España",
+      "bio": "Biografía del artista 1..."
+    },
+    {
+      "id": "artist_02",
+      "name": "Artista B",
+      "country": "Estados Unidos",
+      "bio": "Biografía del artista 2..."
+    },
+    {
+      "id": "artist_03",
+      "name": "Artista C",
+      "country": "Reino Unido",
+      "bio": "Biografía del artista 3..."
+    },
+    {
+      "id": "artist_04",
+      "name": "Artista D",
+      "country": "Alemania",
+      "bio": "Biografía del artista 4..."
+    },
+    {
+      "id": "artist_05",
+      "name": "Artista E",
+      "country": "Francia",
+      "bio": "Biografía del artista 5..."
+    },
+    {
+      "id": "artist_06",
+      "name": "Artista F",
+      "country": "España",
+      "bio": "Biografía del artista 6..."
+    },
+    {
+      "id": "artist_07",
+      "name": "Artista G",
+      "country": "Estados Unidos",
+      "bio": "Biografía del artista 7..."
+    },
+    {
+      "id": "artist_08",
+      "name": "Artista H",
+      "country": "Reino Unido",
+      "bio": "Biografía del artista 8..."
+    }
+  ],
+  "albums": [
+    {
+      "id": "album_01",
+      "title": "Álbum 1 - Artista A",
+      "artistId": "artist_01",
+      "releaseYear": 2018,
+      "genre": "Jazz"
+    },
+    {
+      "id": "album_02",
+      "title": "Álbum 2 - Artista B",
+      "artistId": "artist_02",
+      "releaseYear": 2019,
+      "genre": "Jazz"
+    },
+    {
+      "id": "album_03",
+      "title": "Álbum 3 - Artista B",
+      "artistId": "artist_02",
+      "releaseYear": 2019,
+      "genre": "Blues"
+    },
+    {
+      "id": "album_04",
+      "title": "Álbum 4 - Artista C",
+      "artistId": "artist_03",
+      "releaseYear": 2020,
+      "genre": "Classical"
+    },
+    {
+      "id": "album_05",
+      "title": "Álbum 5 - Artista D",
+      "artistId": "artist_04",
+      "releaseYear": 2021,
+      "genre": "Folk"
+    },
+    {
+      "id": "album_06",
+      "title": "Álbum 6 - Artista D",
+      "artistId": "artist_04",
+      "releaseYear": 2021,
+      "genre": "Rock"
+    },
+    {
+      "id": "album_07",
+      "title": "Álbum 7 - Artista E",
+      "artistId": "artist_05",
+      "releaseYear": 2022,
+      "genre": "Country"
+    },
+    {
+      "id": "album_08",
+      "title": "Álbum 8 - Artista F",
+      "artistId": "artist_06",
+      "releaseYear": 2023,
+      "genre": "Blues"
+    },
+    {
+      "id": "album_09",
+      "title": "Álbum 9 - Artista F",
+      "artistId": "artist_06",
+      "releaseYear": 2023,
+      "genre": "Blues"
+    },
+    {
+      "id": "album_10",
+      "title": "Álbum 10 - Artista G",
+      "artistId": "artist_07",
+      "releaseYear": 2024,
+      "genre": "Hip-Hop"
+    },
+    {
+      "id": "album_11",
+      "title": "Álbum 11 - Artista H",
+      "artistId": "artist_08",
+      "releaseYear": 2025,
+      "genre": "Folk"
+    },
+    {
+      "id": "album_12",
+      "title": "Álbum 12 - Artista H",
+      "artistId": "artist_08",
+      "releaseYear": 2025,
+      "genre": "Electronic"
+    }
+  ],
+  "tracks": [
+    {
+      "id": "track_01",
+      "title": "Canción A",
+      "durationMs": 259280,
+      "artistId": "artist_01",
+      "albumId": "album_01",
+      "genre": "Country",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_02",
+      "title": "Canción B",
+      "durationMs": 201641,
+      "artistId": "artist_02",
+      "albumId": "album_01",
+      "genre": "Classical",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_03",
+      "title": "Canción C",
+      "durationMs": 281029,
+      "artistId": "artist_03",
+      "albumId": "album_01",
+      "genre": "Country",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_04",
+      "title": "Canción D",
+      "durationMs": 225425,
+      "artistId": "artist_04",
+      "albumId": "album_01",
+      "genre": "R&B",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_05",
+      "title": "Canción E",
+      "durationMs": 276392,
+      "artistId": "artist_05",
+      "albumId": "album_01",
+      "genre": "Electronic",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_06",
+      "title": "Canción F",
+      "durationMs": 272585,
+      "artistId": "artist_06",
+      "albumId": "album_01",
+      "genre": "Pop",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_07",
+      "title": "Canción G",
+      "durationMs": 263654,
+      "artistId": "artist_07",
+      "albumId": "album_01",
+      "genre": "Jazz",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_08",
+      "title": "Canción H",
+      "durationMs": 187007,
+      "artistId": "artist_08",
+      "albumId": "album_01",
+      "genre": "Country",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_09",
+      "title": "Canción I",
+      "durationMs": 264684,
+      "artistId": "artist_01",
+      "albumId": "album_02",
+      "genre": "Jazz",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_10",
+      "title": "Canción J",
+      "durationMs": 226392,
+      "artistId": "artist_02",
+      "albumId": "album_02",
+      "genre": "Pop",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_11",
+      "title": "Canción K",
+      "durationMs": 240059,
+      "artistId": "artist_03",
+      "albumId": "album_02",
+      "genre": "Country",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_12",
+      "title": "Canción L",
+      "durationMs": 287336,
+      "artistId": "artist_04",
+      "albumId": "album_02",
+      "genre": "Hip-Hop",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_13",
+      "title": "Canción M",
+      "durationMs": 187760,
+      "artistId": "artist_05",
+      "albumId": "album_02",
+      "genre": "Folk",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_14",
+      "title": "Canción N",
+      "durationMs": 267231,
+      "artistId": "artist_06",
+      "albumId": "album_02",
+      "genre": "Hip-Hop",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_15",
+      "title": "Canción O",
+      "durationMs": 234442,
+      "artistId": "artist_07",
+      "albumId": "album_02",
+      "genre": "Classical",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_16",
+      "title": "Canción P",
+      "durationMs": 299409,
+      "artistId": "artist_08",
+      "albumId": "album_02",
+      "genre": "Hip-Hop",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_17",
+      "title": "Canción Q",
+      "durationMs": 189477,
+      "artistId": "artist_01",
+      "albumId": "album_03",
+      "genre": "Rock",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_18",
+      "title": "Canción R",
+      "durationMs": 204395,
+      "artistId": "artist_02",
+      "albumId": "album_03",
+      "genre": "Electronic",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_19",
+      "title": "Canción S",
+      "durationMs": 230184,
+      "artistId": "artist_03",
+      "albumId": "album_03",
+      "genre": "Country",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_20",
+      "title": "Canción T",
+      "durationMs": 288180,
+      "artistId": "artist_04",
+      "albumId": "album_03",
+      "genre": "R&B",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_21",
+      "title": "Canción U",
+      "durationMs": 212410,
+      "artistId": "artist_05",
+      "albumId": "album_03",
+      "genre": "Jazz",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_22",
+      "title": "Canción V",
+      "durationMs": 285371,
+      "artistId": "artist_06",
+      "albumId": "album_03",
+      "genre": "Country",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_23",
+      "title": "Canción W",
+      "durationMs": 200865,
+      "artistId": "artist_07",
+      "albumId": "album_03",
+      "genre": "Pop",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_24",
+      "title": "Canción X",
+      "durationMs": 299598,
+      "artistId": "artist_08",
+      "albumId": "album_03",
+      "genre": "Classical",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_25",
+      "title": "Canción Y",
+      "durationMs": 252570,
+      "artistId": "artist_01",
+      "albumId": "album_04",
+      "genre": "Pop",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_26",
+      "title": "Canción Z",
+      "durationMs": 261072,
+      "artistId": "artist_02",
+      "albumId": "album_04",
+      "genre": "Hip-Hop",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_27",
+      "title": "Canción [",
+      "durationMs": 242569,
+      "artistId": "artist_03",
+      "albumId": "album_04",
+      "genre": "Jazz",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_28",
+      "title": "Canción \\",
+      "durationMs": 195020,
+      "artistId": "artist_04",
+      "albumId": "album_04",
+      "genre": "Pop",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_29",
+      "title": "Canción ]",
+      "durationMs": 255922,
+      "artistId": "artist_05",
+      "albumId": "album_04",
+      "genre": "Folk",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_30",
+      "title": "Canción ^",
+      "durationMs": 186337,
+      "artistId": "artist_06",
+      "albumId": "album_04",
+      "genre": "Jazz",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_31",
+      "title": "Canción _",
+      "durationMs": 197665,
+      "artistId": "artist_07",
+      "albumId": "album_04",
+      "genre": "Electronic",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_32",
+      "title": "Canción `",
+      "durationMs": 215592,
+      "artistId": "artist_08",
+      "albumId": "album_04",
+      "genre": "Blues",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_33",
+      "title": "Canción a",
+      "durationMs": 256881,
+      "artistId": "artist_01",
+      "albumId": "album_05",
+      "genre": "R&B",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_34",
+      "title": "Canción b",
+      "durationMs": 298246,
+      "artistId": "artist_02",
+      "albumId": "album_05",
+      "genre": "Blues",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_35",
+      "title": "Canción c",
+      "durationMs": 281896,
+      "artistId": "artist_03",
+      "albumId": "album_05",
+      "genre": "Classical",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_36",
+      "title": "Canción d",
+      "durationMs": 297505,
+      "artistId": "artist_04",
+      "albumId": "album_05",
+      "genre": "Folk",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_37",
+      "title": "Canción e",
+      "durationMs": 298680,
+      "artistId": "artist_05",
+      "albumId": "album_05",
+      "genre": "Jazz",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_38",
+      "title": "Canción f",
+      "durationMs": 198598,
+      "artistId": "artist_06",
+      "albumId": "album_05",
+      "genre": "Jazz",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_39",
+      "title": "Canción g",
+      "durationMs": 281059,
+      "artistId": "artist_07",
+      "albumId": "album_05",
+      "genre": "Country",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_40",
+      "title": "Canción h",
+      "durationMs": 246748,
+      "artistId": "artist_08",
+      "albumId": "album_05",
+      "genre": "Jazz",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_41",
+      "title": "Canción i",
+      "durationMs": 214541,
+      "artistId": "artist_01",
+      "albumId": "album_06",
+      "genre": "Classical",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_42",
+      "title": "Canción j",
+      "durationMs": 207729,
+      "artistId": "artist_02",
+      "albumId": "album_06",
+      "genre": "Hip-Hop",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_43",
+      "title": "Canción k",
+      "durationMs": 235706,
+      "artistId": "artist_03",
+      "albumId": "album_06",
+      "genre": "Electronic",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_44",
+      "title": "Canción l",
+      "durationMs": 188529,
+      "artistId": "artist_04",
+      "albumId": "album_06",
+      "genre": "Blues",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_45",
+      "title": "Canción m",
+      "durationMs": 196697,
+      "artistId": "artist_05",
+      "albumId": "album_06",
+      "genre": "Country",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_46",
+      "title": "Canción n",
+      "durationMs": 211541,
+      "artistId": "artist_06",
+      "albumId": "album_06",
+      "genre": "Classical",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_47",
+      "title": "Canción o",
+      "durationMs": 230205,
+      "artistId": "artist_07",
+      "albumId": "album_06",
+      "genre": "Jazz",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_48",
+      "title": "Canción p",
+      "durationMs": 276353,
+      "artistId": "artist_08",
+      "albumId": "album_06",
+      "genre": "Hip-Hop",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_49",
+      "title": "Canción q",
+      "durationMs": 185989,
+      "artistId": "artist_01",
+      "albumId": "album_07",
+      "genre": "Folk",
+      "explicit": false,
+      "streamUrl": null
+    },
+    {
+      "id": "track_50",
+      "title": "Canción r",
+      "durationMs": 183358,
+      "artistId": "artist_02",
+      "albumId": "album_07",
+      "genre": "Hip-Hop",
+      "explicit": false,
+      "streamUrl": null
+    }
+  ],
+  "metrics": {
+    "totalTracks": 50,
+    "totalArtists": 8,
+    "totalAlbums": 12,
+    "generatedAt": "2026-09-30T15:43:21.681Z"
+  }
+}
