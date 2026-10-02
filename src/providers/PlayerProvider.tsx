@@ -3,6 +3,7 @@ import { usePlayerStore } from '@/stores/playerStore';
 import { useAuthStore } from '@/stores/authStore';
 import { localFilesService } from '@/services/localFiles';
 import { spotifyService } from '@/services/spotify';
+import { useFavoritesStore } from '@/stores/favoritesStore';
 import type { Track } from '@/types';
 
 interface SpotifySdkTrack {
@@ -78,10 +79,159 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const spotifyPlaybackPendingTrackIdRef = useRef<string | null>(null);
   const lastSpotifyPositionRef = useRef(0);
   const wasSpotifyPlayingRef = useRef(false);
+  const endingSpotifyTrackIdRef = useRef<string | null>(null);
+  const autoplayInProgressRef = useRef<string | null>(null);
   const positionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const crossfadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSeekingRef = useRef(false);
   const mediaSessionSupported = typeof navigator !== 'undefined' && 'mediaSession' in navigator;
+
+  const advanceAtEnd = useCallback(async () => {
+    const initialState = usePlayerStore.getState();
+    const endedTrack = initialState.currentTrack;
+    if (!endedTrack || autoplayInProgressRef.current === endedTrack.id) return;
+
+    if (initialState.repeatMode === 'track') {
+      if (endedTrack.source === 'spotify' && activePlaybackModeRef.current === 'spotify') {
+        const player = spotifyPlayerRef.current;
+        void player?.seek(0).then(() => player.resume()).catch(error => {
+          usePlayerStore.getState().setPlaybackError(
+            error instanceof Error ? `No se pudo repetir la canción: ${error.message}` : 'No se pudo repetir la canción.'
+          );
+          usePlayerStore.setState({ isPlaying: false });
+        });
+      } else if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        void audioRef.current.play().catch(error => {
+          usePlayerStore.getState().setPlaybackError(
+            error instanceof Error ? `No se pudo repetir la canción: ${error.message}` : 'No se pudo repetir la canción.'
+          );
+          usePlayerStore.setState({ isPlaying: false });
+        });
+      }
+      usePlayerStore.setState({ isPlaying: true, position: 0 });
+      return;
+    }
+
+    if (initialState.getNextTrack()) {
+      initialState.next();
+      return;
+    }
+
+    const autoplaySetting = localStorage.getItem('wavelength-autoplay');
+    if (autoplaySetting === 'false') {
+      usePlayerStore.setState({ isPlaying: false, position: initialState.duration });
+      return;
+    }
+
+    autoplayInProgressRef.current = endedTrack.id;
+    usePlayerStore.setState({ isPlaying: false });
+
+    try {
+      const pool = new Map<string, Track>();
+      let spotifyLookupError: string | null = null;
+      const addTracks = (tracks: Track[]) => {
+        for (const track of tracks) {
+          pool.set(`${track.source}:${track.id}`, track);
+        }
+      };
+
+      const state = usePlayerStore.getState();
+      const unavailableIds = new Set([
+        ...state.queue.map(item => `${item.track.source}:${item.track.id}`),
+        ...state.history.slice(0, 15).map(item => `${item.track.source}:${item.track.id}`),
+        `${endedTrack.source}:${endedTrack.id}`,
+      ]);
+      const hasAvailableCandidate = () => [...pool.keys()].some(key => !unavailableIds.has(key));
+
+      addTracks(useFavoritesStore.getState().tracks);
+
+      if (endedTrack.source === 'spotify' && spotifyService.isAuthenticated()) {
+        if (endedTrack.sourceId || endedTrack.id) {
+          try {
+            addTracks(await spotifyService.getRecommendations(
+              [endedTrack.sourceId || endedTrack.id],
+              endedTrack.artistId ? [endedTrack.artistId] : [],
+              [],
+              30
+            ));
+          } catch (error) {
+            spotifyLookupError ??= error instanceof Error ? error.message : 'No se pudieron cargar recomendaciones.';
+            // Recommendations may be unavailable for some Spotify apps; use the user's catalog below.
+          }
+        }
+
+        if (!hasAvailableCandidate()) {
+          try {
+            addTracks(await spotifyService.getTopTracks('short_term', 50));
+          } catch (error) {
+            spotifyLookupError ??= error instanceof Error ? error.message : 'No se pudieron cargar tus canciones más escuchadas.';
+            // Saved and recently played tracks remain available as fallback sources.
+          }
+        }
+        if (!hasAvailableCandidate()) {
+          try {
+            addTracks(await spotifyService.getSavedTracks(50));
+          } catch (error) {
+            spotifyLookupError ??= error instanceof Error ? error.message : 'No se pudieron cargar tus canciones guardadas.';
+            // Continue to local tracks and favorites if Spotify library access is unavailable.
+          }
+        }
+        if (!hasAvailableCandidate()) {
+          try {
+            addTracks(await spotifyService.getRecentlyPlayed(50));
+          } catch (error) {
+            spotifyLookupError ??= error instanceof Error ? error.message : 'No se pudo cargar el historial de Spotify.';
+            // Report a clear playback error if all catalog sources are unavailable.
+          }
+        }
+      }
+
+      if (endedTrack.source === 'local' || !hasAvailableCandidate()) {
+        addTracks(await localFilesService.getAllTracks());
+      }
+
+      const currentState = usePlayerStore.getState();
+      const currentUnavailableIds = new Set([
+        ...currentState.queue.map(item => `${item.track.source}:${item.track.id}`),
+        ...currentState.history.slice(0, 15).map(item => `${item.track.source}:${item.track.id}`),
+        `${currentState.currentTrack?.source}:${currentState.currentTrack?.id}`,
+      ]);
+      const availableTracks = [...pool.entries()]
+        .filter(([key]) => !currentUnavailableIds.has(key))
+        .map(([, track]) => track);
+      const lessRecentTracks = availableTracks.filter(
+        track => !currentState.history.slice(0, 15).some(item => item.track.id === track.id && item.track.source === track.source)
+      );
+      const preferredTracks = (lessRecentTracks.length > 0 ? lessRecentTracks : availableTracks)
+        .filter(track => track.source === endedTrack.source);
+      const candidates = preferredTracks.length > 0
+        ? preferredTracks
+        : lessRecentTracks.length > 0 ? lessRecentTracks : availableTracks;
+
+      const latestTrack = usePlayerStore.getState().currentTrack;
+      if (latestTrack?.id !== endedTrack.id || latestTrack.source !== endedTrack.source) return;
+      if (candidates.length === 0) {
+        usePlayerStore.getState().setPlaybackError(
+          spotifyLookupError
+            ? `No se pudieron cargar canciones aleatorias de Spotify: ${spotifyLookupError}`
+            : 'La cola terminó y no hay canciones aleatorias disponibles. Agrega música a favoritos o a tu biblioteca para continuar automáticamente.'
+        );
+        return;
+      }
+
+      const randomTrack = candidates[Math.floor(Math.random() * candidates.length)];
+      usePlayerStore.getState().playNextTrack(randomTrack, 'autoplay');
+    } catch (error) {
+      usePlayerStore.getState().setPlaybackError(
+        error instanceof Error
+          ? `No se pudo encontrar otra canción para reproducir: ${error.message}`
+          : 'No se pudo encontrar otra canción para reproducir.'
+      );
+    } finally {
+      autoplayInProgressRef.current = null;
+    }
+  }, []);
 
   const playSpotifyPreview = useCallback(async (track: Track, message: string): Promise<boolean> => {
     const audio = audioRef.current;
@@ -126,10 +276,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           if (nextTrack) {
             const { next } = usePlayerStore.getState();
             next();
+          } else {
+            void advanceAtEnd();
           }
         }, 100);
       } else {
-        next();
+        void advanceAtEnd();
       }
     };
 
@@ -251,16 +403,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         wasSpotifyPlayingRef.current = !state.paused;
         lastSpotifyPositionRef.current = state.position;
         if (ended) {
-          if (store.repeatMode === 'track') {
-            void player?.seek(0).then(() => player?.resume());
-            usePlayerStore.setState({ isPlaying: true, position: 0 });
-            return;
+          if (endingSpotifyTrackIdRef.current !== sdkTrackId) {
+            endingSpotifyTrackIdRef.current = sdkTrackId;
+            void advanceAtEnd();
           }
-          if (store.getNextTrack()) {
-            store.next();
-            return;
-          }
+          return;
         }
+        if (!state.paused) endingSpotifyTrackIdRef.current = null;
         usePlayerStore.setState({
           isPlaying: !state.paused,
           position: state.position,
@@ -318,7 +467,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         lastSpotifyTrackIdRef.current = null;
       }
     };
-  }, [isAuthenticated]);
+  }, [advanceAtEnd, isAuthenticated]);
 
   const loadTrack = useCallback(async (track: typeof currentTrack) => {
     if (!track || !audioRef.current) return;

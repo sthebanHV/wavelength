@@ -11,6 +11,7 @@ interface PlayerState extends PlaybackState {
   pause: () => void;
   togglePlay: () => void;
   next: () => void;
+  playNextTrack: (track: Track, source?: QueueItem['source']) => void;
   previous: () => void;
   seek: (position: number) => void;
   setVolume: (volume: number) => void;
@@ -157,6 +158,24 @@ export const usePlayerStore = create<PlayerState>()(
             duration: nextItem.track.duration,
           });
         }
+      },
+
+      playNextTrack: (track, source = 'autoplay') => {
+        const { queue, currentIndex } = get();
+        const currentItem = queue[currentIndex];
+        const nextItem = createQueueItem(track, source);
+        const nextQueue = [...queue, nextItem];
+
+        set(state => ({
+          queue: nextQueue,
+          currentTrack: track,
+          currentIndex: nextQueue.length - 1,
+          isPlaying: true,
+          position: 0,
+          duration: track.duration,
+          playbackError: null,
+          history: currentItem ? [currentItem, ...state.history.slice(0, 99)] : state.history,
+        }));
       },
 
       previous: () => {

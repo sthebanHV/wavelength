@@ -228,7 +228,7 @@ export function Settings() {
                     <label className="flex items-center justify-between cursor-pointer">
                       <div>
                         <p className="font-medium">Reproducción automática</p>
-                        <p className="text-sm text-text-muted">Continuar con canciones similares al terminar la cola</p>
+                        <p className="text-sm text-text-muted">Continuar aleatoriamente con canciones similares al terminar la cola</p>
                       </div>
                       <Switch checked={autoPlayNext} onCheckedChange={(v) => setAutoPlayNext(v)} />
                     </label>

@@ -33,4 +33,17 @@ describe('player queue actions', () => {
     expect(state.queue.map(item => item.track.id)).toEqual(['track-one', 'track-two']);
     expect(state.queue.every(item => item.source === 'playlist')).toBe(true);
   });
+
+  it('appends and starts an autoplay track while keeping the previous track in history', () => {
+    usePlayerStore.getState().playTracks(tracks.slice(0, 1), 'playlist');
+    usePlayerStore.getState().playNextTrack(tracks[1]);
+
+    const state = usePlayerStore.getState();
+    expect(state.currentTrack?.id).toBe('track-two');
+    expect(state.currentIndex).toBe(1);
+    expect(state.queue.map(item => item.track.id)).toEqual(['track-one', 'track-two']);
+    expect(state.queue[1].source).toBe('autoplay');
+    expect(state.history[0].track.id).toBe('track-one');
+    expect(state.isPlaying).toBe(true);
+  });
 });
