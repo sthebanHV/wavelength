@@ -201,6 +201,13 @@ function formatDuration(ms: number): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
+function mapSearchItems<T, R>(
+  items: (T | null | undefined)[] | undefined,
+  mapper: (item: T) => R
+): R[] {
+  return items?.filter((item): item is T => item != null).map(mapper) ?? [];
+}
+
 export const spotifyService = {
   async initiateAuth(): Promise<void> {
     const codeVerifier = generateCodeVerifier();
@@ -415,10 +422,10 @@ export const spotifyService = {
     }>(`/search?q=${encodeURIComponent(query)}&type=${typeParam}&limit=${searchLimit}`);
 
     return {
-      tracks: data.tracks?.items.map(mapSpotifyTrack) || [],
-      albums: data.albums?.items.map(mapSpotifyAlbum) || [],
-      artists: data.artists?.items.map(mapSpotifyArtist) || [],
-      playlists: data.playlists?.items.map(mapSpotifyPlaylist) || [],
+      tracks: mapSearchItems(data.tracks?.items, mapSpotifyTrack),
+      albums: mapSearchItems(data.albums?.items, mapSpotifyAlbum),
+      artists: mapSearchItems(data.artists?.items, mapSpotifyArtist),
+      playlists: mapSearchItems(data.playlists?.items, mapSpotifyPlaylist),
     };
   },
 
