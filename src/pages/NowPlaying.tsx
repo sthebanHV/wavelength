@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -14,6 +15,7 @@ import {
   SkipForward,
   Shuffle,
   Trash2,
+  Upload,
   Volume2,
   VolumeX,
 } from 'lucide-react';
@@ -25,8 +27,38 @@ import { usePlayerStore } from '@/stores/playerStore';
 import { formatDuration } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
+interface LyricLine {
+  time: number;
+  text: string;
+}
+
+function parseLrc(content: string): LyricLine[] {
+  const lines: LyricLine[] = [];
+  const timestampPattern = /\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]/g;
+
+  for (const line of content.split(/\r?\n/)) {
+    const timestamps = [...line.matchAll(timestampPattern)];
+    const text = line.replace(timestampPattern, '').trim();
+    if (!text) continue;
+
+    for (const timestamp of timestamps) {
+      const fraction = timestamp[3] || '0';
+      const milliseconds = Number(fraction.padEnd(3, '0').slice(0, 3));
+      lines.push({
+        time: (Number(timestamp[1]) * 60 + Number(timestamp[2])) * 1000 + milliseconds,
+        text,
+      });
+    }
+  }
+
+  return lines.sort((left, right) => left.time - right.time);
+}
+
 export function NowPlaying() {
   const navigate = useNavigate();
+  const [lyrics, setLyrics] = useState<LyricLine[]>([]);
+  const [lyricsFileName, setLyricsFileName] = useState<string | null>(null);
+  const [lyricsError, setLyricsError] = useState<string | null>(null);
   const {
     currentTrack,
     isPlaying,
@@ -58,6 +90,37 @@ export function NowPlaying() {
   const upcoming = queue
     .map((item, index) => ({ item, index }))
     .filter(({ index }) => index > currentIndex);
+  const activeLyricIndex = lyrics.reduce(
+    (activeIndex, line, index) => line.time <= position ? index : activeIndex,
+    -1
+  );
+
+  useEffect(() => {
+    setLyrics([]);
+    setLyricsFileName(null);
+    setLyricsError(null);
+  }, [currentTrack?.id, currentTrack?.source]);
+
+  const handleLyricsFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = '';
+    if (!file) return;
+
+    try {
+      const parsedLyrics = parseLrc(await file.text());
+      if (parsedLyrics.length === 0) {
+        throw new Error('El archivo no contiene líneas de letra con marcas de tiempo LRC.');
+      }
+
+      setLyrics(parsedLyrics);
+      setLyricsFileName(file.name);
+      setLyricsError(null);
+    } catch (error) {
+      setLyrics([]);
+      setLyricsFileName(null);
+      setLyricsError(error instanceof Error ? error.message : 'No se pudo leer el archivo de letra.');
+    }
+  };
 
   const toggleRepeat = () => {
     const modes = ['off', 'context', 'track'] as const;
@@ -219,25 +282,55 @@ export function NowPlaying() {
                 <p className="text-xs text-text-muted">Información de la canción</p>
               </div>
             </div>
-            <a
-              href={currentTrack.source === 'spotify' && currentTrack.sourceId
-                ? `https://open.spotify.com/track/${encodeURIComponent(currentTrack.sourceId)}`
-                : `https://open.spotify.com/search/${encodeURIComponent(`${currentTrack.title} ${currentTrack.artist}`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-medium text-accent transition-colors hover:bg-accent/20"
-            >
-              Abrir en Spotify
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
+            <div className="flex shrink-0 items-center gap-2">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border-default px-3 py-2 text-xs font-medium text-text-secondary transition-colors hover:bg-bg-tertiary">
+                <Upload className="h-3.5 w-3.5" />
+                Cargar .LRC
+                <input
+                  type="file"
+                  accept=".lrc,text/plain"
+                  className="sr-only"
+                  aria-label="Cargar archivo de letra LRC"
+                  onChange={handleLyricsFileChange}
+                />
+              </label>
+              <a
+                href={currentTrack.source === 'spotify' && currentTrack.sourceId
+                  ? `https://open.spotify.com/track/${encodeURIComponent(currentTrack.sourceId)}`
+                  : `https://open.spotify.com/search/${encodeURIComponent(`${currentTrack.title} ${currentTrack.artist}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-medium text-accent transition-colors hover:bg-accent/20"
+              >
+                Spotify
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </div>
           </div>
-          <div className="flex flex-1 flex-col justify-center py-6">
-            <p className="text-lg font-medium text-text-secondary">{currentTrack.title}</p>
-            <p className="mt-1 text-sm text-text-muted">{currentTrack.artist}</p>
-            <p className="mt-4 max-w-xl text-sm leading-relaxed text-text-muted">
-              Spotify no permite cargar letras dentro de Wavelength. Abre la canción en Spotify para consultar la letra oficial si está disponible.
-            </p>
-          </div>
+          {lyrics.length > 0 ? (
+            <div className="max-h-80 space-y-3 overflow-y-auto py-5 text-center" aria-live="polite">
+              {lyrics.map((line, index) => (
+                <p
+                  key={`${line.time}-${index}`}
+                  className={cn(
+                    'text-lg font-medium transition-colors',
+                    index === activeLyricIndex ? 'text-accent' : 'text-text-muted'
+                  )}
+                >
+                  {line.text}
+                </p>
+              ))}
+              <p className="pt-2 text-xs text-text-muted">Letra: {lyricsFileName}</p>
+            </div>
+          ) : (
+            <div className="flex flex-1 flex-col justify-center py-6">
+              <p className="text-lg font-medium text-text-secondary">{currentTrack.title}</p>
+              <p className="mt-1 text-sm text-text-muted">{currentTrack.artist}</p>
+              <p className="mt-4 max-w-xl text-sm leading-relaxed text-text-muted">
+                {lyricsError || 'Spotify no permite cargar letras dentro de Wavelength. Carga un archivo .LRC para ver y sincronizar la letra aquí, o abre la canción en Spotify.'}
+              </p>
+            </div>
+          )}
         </section>
       </div>
 
