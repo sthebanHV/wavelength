@@ -1,6 +1,57 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { usePlayerStore } from '@/stores/playerStore';
+import { useAuthStore } from '@/stores/authStore';
 import { localFilesService } from '@/services/localFiles';
+import { spotifyService } from '@/services/spotify';
+import type { Track } from '@/types';
+
+interface SpotifySdkTrack {
+  id: string;
+  name: string;
+  uri: string;
+  artists: { name: string }[];
+  album: { images: { url: string }[] };
+}
+
+interface SpotifySdkState {
+  paused: boolean;
+  position: number;
+  duration: number;
+  track_window: { current_track: SpotifySdkTrack };
+}
+
+interface SpotifySdkPlayer {
+  addListener(event: 'ready', callback: (data: { device_id: string }) => void): boolean;
+  addListener(event: 'not_ready', callback: (data: { device_id: string }) => void): boolean;
+  addListener(event: 'player_state_changed', callback: (state: SpotifySdkState | null) => void): boolean;
+  addListener(event: 'initialization_error' | 'authentication_error' | 'account_error' | 'playback_error', callback: (data: { message: string }) => void): boolean;
+  connect(): Promise<boolean>;
+  disconnect(): void;
+  activateElement(): Promise<void>;
+  resume(): Promise<void>;
+  pause(): Promise<void>;
+  nextTrack(): Promise<void>;
+  previousTrack(): Promise<void>;
+  seek(position: number): Promise<void>;
+  setVolume(volume: number): Promise<void>;
+}
+
+interface SpotifySdk {
+  Player: new (options: {
+    name: string;
+    volume: number;
+    getOAuthToken: (callback: (token: string) => void) => void;
+  }) => SpotifySdkPlayer;
+}
+
+declare global {
+  interface Window {
+    Spotify?: SpotifySdk;
+    onSpotifyWebPlaybackSDKReady?: () => void;
+  }
+}
+
+const SPOTIFY_SDK_URL = 'https://sdk.scdn.co/spotify-player.js';
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const {
@@ -15,8 +66,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setVolume,
     getNextTrack,
   } = usePlayerStore();
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const spotifyPlayerRef = useRef<SpotifySdkPlayer | null>(null);
+  const [spotifyDeviceId, setSpotifyDeviceId] = useState<string | null>(null);
+  const activePlaybackModeRef = useRef<'audio' | 'spotify'>('audio');
+  const lastSpotifyTrackIdRef = useRef<string | null>(null);
+  const lastSpotifyPositionRef = useRef(0);
   const positionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const crossfadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSeekingRef = useRef(false);
@@ -37,6 +94,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     };
 
     const handleEnded = () => {
+      if (activePlaybackModeRef.current === 'spotify') return;
       if (crossfade && getNextTrack()) {
         if (crossfadeTimeoutRef.current) clearTimeout(crossfadeTimeoutRef.current);
         crossfadeTimeoutRef.current = setTimeout(() => {
@@ -107,26 +165,116 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isAuthenticated || spotifyPlayerRef.current) return;
+
+    let cancelled = false;
+    let player: SpotifySdkPlayer | null = null;
+    let activatePlayer: (() => void) | null = null;
+
+    const initializePlayer = () => {
+      if (cancelled || !window.Spotify || spotifyPlayerRef.current) return;
+
+      player = new window.Spotify.Player({
+        name: 'Wavelength Web Player',
+        volume: usePlayerStore.getState().volume,
+        getOAuthToken: callback => {
+          spotifyService.getAccessToken().then(callback).catch(error => {
+            usePlayerStore.getState().setPlaybackError(
+              error instanceof Error ? error.message : 'No se pudo obtener el acceso a Spotify.'
+            );
+          });
+        },
+      });
+      spotifyPlayerRef.current = player;
+      activatePlayer = () => {
+        void player?.activateElement().catch(error => {
+          usePlayerStore.getState().setPlaybackError(
+            error instanceof Error ? `No se pudo activar el reproductor: ${error.message}` : 'No se pudo activar el reproductor.'
+          );
+        });
+      };
+      document.addEventListener('pointerdown', activatePlayer, true);
+
+      player.addListener('ready', ({ device_id }) => {
+        setSpotifyDeviceId(device_id);
+        lastSpotifyTrackIdRef.current = null;
+      });
+      player.addListener('not_ready', ({ device_id }) => {
+        setSpotifyDeviceId(current => current === device_id ? null : current);
+      });
+      player.addListener('player_state_changed', state => {
+        if (!state) return;
+        lastSpotifyPositionRef.current = state.position;
+        usePlayerStore.setState({
+          isPlaying: !state.paused,
+          position: state.position,
+          duration: state.duration,
+        });
+      });
+      player.addListener('initialization_error', ({ message }) => {
+        usePlayerStore.getState().setPlaybackError(`No se pudo iniciar el reproductor de Spotify: ${message}`);
+      });
+      player.addListener('authentication_error', ({ message }) => {
+        usePlayerStore.getState().setPlaybackError(`Spotify no autorizó la reproducción: ${message}`);
+      });
+      player.addListener('account_error', ({ message }) => {
+        usePlayerStore.getState().setPlaybackError(`La reproducción completa requiere Spotify Premium: ${message}`);
+      });
+      player.addListener('playback_error', ({ message }) => {
+        usePlayerStore.getState().setPlaybackError(`Spotify no pudo reproducir esta canción: ${message}`);
+      });
+      void player.connect();
+    };
+
+    if (window.Spotify) {
+      initializePlayer();
+    } else {
+      window.onSpotifyWebPlaybackSDKReady = initializePlayer;
+      if (!document.querySelector(`script[src="${SPOTIFY_SDK_URL}"]`)) {
+        const script = document.createElement('script');
+        script.src = SPOTIFY_SDK_URL;
+        script.async = true;
+        script.onerror = () => {
+          usePlayerStore.getState().setPlaybackError('No se pudo cargar el reproductor web de Spotify.');
+        };
+        document.body.appendChild(script);
+      }
+    }
+
+    return () => {
+      cancelled = true;
+      if (window.onSpotifyWebPlaybackSDKReady === initializePlayer) {
+        window.onSpotifyWebPlaybackSDKReady = undefined;
+      }
+      if (activatePlayer) document.removeEventListener('pointerdown', activatePlayer, true);
+      player?.disconnect();
+      if (spotifyPlayerRef.current === player) {
+        spotifyPlayerRef.current = null;
+        setSpotifyDeviceId(null);
+        lastSpotifyTrackIdRef.current = null;
+      }
+    };
+  }, [isAuthenticated]);
+
   const loadTrack = useCallback(async (track: typeof currentTrack) => {
     if (!track || !audioRef.current) return;
 
     const audio = audioRef.current;
 
     if (track.source === 'local') {
+      activePlaybackModeRef.current = 'audio';
+      lastSpotifyTrackIdRef.current = null;
       const blobUrl = await localFilesService.getFileUrl(track.id);
       if (blobUrl) {
         audio.src = blobUrl;
       }
     } else if (track.source === 'spotify') {
-      if (track.previewUrl) {
-        audio.src = track.previewUrl;
-      } else {
-        console.warn('No preview URL available for Spotify track');
-        return;
-      }
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
     }
 
-    audio.load();
   }, []);
 
   useEffect(() => {
@@ -138,6 +286,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
+      if (currentTrack?.source === 'spotify') {
+        void spotifyPlayerRef.current?.setVolume(volume);
+      }
       if (mediaSessionSupported && currentTrack) {
         navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
         navigator.mediaSession.metadata = new MediaMetadata({
@@ -153,6 +304,20 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!audioRef.current) return;
 
+    if (currentTrack?.source === 'spotify') {
+      if (activePlaybackModeRef.current === 'spotify') {
+        if (isPlaying) void spotifyPlayerRef.current?.resume();
+        else void spotifyPlayerRef.current?.pause();
+      } else if (audioRef.current.hasAttribute('src')) {
+        if (isPlaying) {
+          void audioRef.current.play().catch(() => usePlayerStore.setState({ isPlaying: false }));
+        } else {
+          audioRef.current.pause();
+        }
+      }
+      return;
+    }
+
     if (isPlaying) {
       const playPromise = audioRef.current.play();
       if (playPromise) {
@@ -163,10 +328,81 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     } else {
       audioRef.current.pause();
     }
-  }, [isPlaying]);
+  }, [isPlaying, currentTrack]);
 
   useEffect(() => {
-    if (!audioRef.current || isSeekingRef.current) return;
+    if (currentTrack?.source !== 'spotify') {
+      activePlaybackModeRef.current = 'audio';
+      lastSpotifyTrackIdRef.current = null;
+      return;
+    }
+    if (!isAuthenticated) {
+      usePlayerStore.getState().setPlaybackError('Conecta tu cuenta de Spotify para reproducir esta canción.');
+      usePlayerStore.setState({ isPlaying: false });
+      return;
+    }
+
+    const player = spotifyPlayerRef.current;
+    const deviceId = spotifyDeviceId;
+    if (!player || !deviceId || !isPlaying) return;
+
+    if (lastSpotifyTrackIdRef.current === currentTrack.id) {
+      return;
+    }
+
+    lastSpotifyTrackIdRef.current = currentTrack.id;
+    activePlaybackModeRef.current = 'spotify';
+    usePlayerStore.getState().setPlaybackError(null);
+    audioRef.current?.pause();
+
+    const playOnDevice = async (track: Track) => {
+      try {
+        await spotifyService.transferPlayback([deviceId]);
+        await spotifyService.play(undefined, [`spotify:track:${track.id}`]);
+      } catch (error) {
+        if (track.previewUrl && audioRef.current) {
+          activePlaybackModeRef.current = 'audio';
+          audioRef.current.src = track.previewUrl;
+          audioRef.current.load();
+          try {
+            await audioRef.current.play();
+            usePlayerStore.setState({ isPlaying: true, position: 0, duration: audioRef.current.duration * 1000 || track.duration });
+            usePlayerStore.getState().setPlaybackError('No se pudo iniciar la reproducción completa de Spotify; reproduciendo el avance disponible.');
+            return;
+          } catch {
+            // Report the original Spotify playback error below.
+          }
+        }
+        const message = error instanceof Error ? error.message : 'No se pudo iniciar la reproducción.';
+        usePlayerStore.getState().setPlaybackError(
+          message.includes('Premium') || message.includes('403')
+            ? 'La reproducción completa en la página requiere Spotify Premium.'
+            : `No se pudo reproducir desde Spotify: ${message}`
+        );
+        usePlayerStore.setState({ isPlaying: false });
+      }
+    };
+
+    void playOnDevice(currentTrack);
+  }, [currentTrack, isAuthenticated, isPlaying, spotifyDeviceId]);
+
+  useEffect(() => {
+    if (isSeekingRef.current) return;
+    if (currentTrack?.source === 'spotify') {
+      if (
+        activePlaybackModeRef.current === 'spotify'
+        && Math.abs(position - lastSpotifyPositionRef.current) > 500
+      ) {
+        lastSpotifyPositionRef.current = position;
+        void spotifyPlayerRef.current?.seek(position).catch(error => {
+          usePlayerStore.getState().setPlaybackError(
+            error instanceof Error ? `No se pudo cambiar el minuto de reproducción: ${error.message}` : 'No se pudo cambiar el minuto de reproducción.'
+          );
+        });
+      }
+      return;
+    }
+    if (!audioRef.current) return;
 
     const targetTime = position / 1000;
     const currentTime = audioRef.current.currentTime;
@@ -174,16 +410,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (Math.abs(currentTime - targetTime) > 1) {
       audioRef.current.currentTime = targetTime;
     }
-  }, [position]);
+  }, [position, currentTrack]);
 
   const handleSeek = useCallback((newPosition: number) => {
     isSeekingRef.current = true;
     seek(newPosition);
-    if (audioRef.current) {
+    if (currentTrack?.source === 'spotify' && activePlaybackModeRef.current === 'spotify') {
+      void spotifyPlayerRef.current?.seek(newPosition);
+    } else if (audioRef.current) {
       audioRef.current.currentTime = newPosition / 1000;
     }
     setTimeout(() => { isSeekingRef.current = false; }, 100);
-  }, [seek]);
+  }, [currentTrack, seek]);
 
   const handleNext = useCallback(() => {
     if (crossfade && getNextTrack()) {
@@ -222,7 +460,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (audioRef.current) {
       audioRef.current.volume = newVolume;
     }
-  }, [setVolume]);
+    if (currentTrack?.source === 'spotify') void spotifyPlayerRef.current?.setVolume(newVolume);
+  }, [currentTrack, setVolume]);
 
   return (
     <>

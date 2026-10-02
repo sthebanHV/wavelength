@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SkeletonTrack, SkeletonAlbum, SkeletonArtist, SkeletonPlaylist } from '@/components/ui/skeleton';
 import { formatDuration, formatDurationLong, formatNumber } from '@/lib/utils';
 import { useLibraryStore } from '@/stores/libraryStore';
+import { usePlayerStore } from '@/stores/playerStore';
 import { spotifyService } from '@/services/spotify';
 import { localFilesService } from '@/services/localFiles';
 import { cn } from '@/lib/utils';
@@ -314,7 +315,7 @@ export function Search() {
                 <ScrollArea className="h-64" type="always">
                   <div className="flex gap-4 pb-4">
                     {combinedResults.tracks.slice(0, 10).map((track) => (
-                      <Link key={track.id} to="#" className="flex-shrink-0 w-40 group">
+                          <div key={track.id} className="flex-shrink-0 w-40 group">
                         <div className="relative aspect-square rounded-lg overflow-hidden bg-bg-tertiary group-hover:scale-105 transition-transform">
                           {track.albumArt ? (
                             <img src={track.albumArt} alt={track.title} className="w-full h-full object-cover" />
@@ -323,12 +324,21 @@ export function Search() {
                               <Music className="h-10 w-10 text-accent/50" />
                             </div>
                           )}
+                          <Button
+                            variant="primary"
+                            size="icon"
+                            className="absolute bottom-2 right-2 rounded-full"
+                            onClick={() => usePlayerStore.getState().play(track)}
+                            aria-label={`Reproducir ${track.title}`}
+                          >
+                            <Play className="h-5 w-5" />
+                          </Button>
                         </div>
                         <div className="mt-2 space-y-1">
                           <p className="text-sm font-medium truncate">{track.title}</p>
                           <p className="text-xs text-text-muted truncate">{track.artist}</p>
                         </div>
-                      </Link>
+                      </div>
                     ))}
                   </div>
                 </ScrollArea>
@@ -431,7 +441,7 @@ export function Search() {
 
 function TrackRow({ track, index }: { track: Track; index: number }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl p-2 hover:bg-bg-hover transition-colors cursor-pointer group">
+    <div className="flex items-center gap-4 rounded-xl p-2 hover:bg-bg-hover transition-colors group">
       <span className="w-8 text-center text-xs text-text-muted">{index}</span>
       {track.albumArt ? (
         <img src={track.albumArt} alt={track.title} className="h-10 w-10 rounded-lg object-cover" />
@@ -448,6 +458,14 @@ function TrackRow({ track, index }: { track: Track; index: number }) {
       <Badge variant="outline" size="sm" className="text-[10px]">
         {track.source === 'spotify' ? 'Spotify' : 'Local'}
       </Badge>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => usePlayerStore.getState().play(track)}
+        aria-label={`Reproducir ${track.title}`}
+      >
+        <Play className="h-4 w-4" />
+      </Button>
     </div>
   );
 }

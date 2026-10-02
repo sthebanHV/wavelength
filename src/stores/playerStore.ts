@@ -5,6 +5,7 @@ import type { Track, QueueItem, PlaybackState } from '@/types';
 import { generateId } from '@/lib/utils';
 
 interface PlayerState extends PlaybackState {
+  playbackError: string | null;
   play: (track: Track, context?: { queue?: QueueItem[]; index?: number; source?: QueueItem['source'] }) => void;
   pause: () => void;
   togglePlay: () => void;
@@ -21,6 +22,7 @@ interface PlayerState extends PlaybackState {
   reorderQueue: (fromIndex: number, toIndex: number) => void;
   playFromQueue: (index: number) => void;
   setCrossfade: (enabled: boolean) => void;
+  setPlaybackError: (error: string | null) => void;
   getNextTrack: () => Track | null;
   getPreviousTrack: () => Track | null;
 }
@@ -48,6 +50,7 @@ export const usePlayerStore = create<PlayerState>()(
       repeatMode: 'off',
       shuffle: false,
       crossfade: false,
+      playbackError: null,
 
       play: (track, context) => {
         const { queue, currentIndex } = get();
@@ -60,6 +63,7 @@ export const usePlayerStore = create<PlayerState>()(
             isPlaying: true,
             position: 0,
             duration: track.duration,
+            playbackError: null,
           });
           return;
         }
@@ -73,6 +77,7 @@ export const usePlayerStore = create<PlayerState>()(
             isPlaying: true,
             position: 0,
             duration: track.duration,
+            playbackError: null,
           });
           return;
         }
@@ -87,6 +92,7 @@ export const usePlayerStore = create<PlayerState>()(
           isPlaying: true,
           position: 0,
           duration: track.duration,
+          playbackError: null,
         });
       },
 
@@ -252,6 +258,7 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       setCrossfade: (crossfade: boolean) => set({ crossfade }),
+      setPlaybackError: (playbackError) => set({ playbackError }),
 
       getNextTrack: () => {
         const { queue, currentIndex, repeatMode, shuffle } = get();

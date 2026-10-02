@@ -30,6 +30,7 @@ export function PlayerBar() {
     volume,
     shuffle,
     repeatMode,
+    playbackError,
     togglePlay,
     next,
     previous,
@@ -103,6 +104,7 @@ export function PlayerBar() {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-text-primary truncate">{currentTrack?.title || 'Nada reproduciéndose'}</p>
             <p className="text-xs text-text-muted truncate">{currentTrack?.artist || 'Selecciona una canción'}</p>
+            {playbackError && <p className="text-[10px] text-error truncate" role="status">{playbackError}</p>}
           </div>
 
           <Tooltip>

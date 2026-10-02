@@ -90,9 +90,14 @@ async function getValidAccessToken(): Promise<string | null> {
   return null;
 }
 
+async function requireAccessToken(): Promise<string> {
+  const token = await getValidAccessToken();
+  if (!token) throw new Error('Vuelve a conectar tu cuenta de Spotify.');
+  return token;
+}
+
 async function spotifyFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const accessToken = await getValidAccessToken();
-  if (!accessToken) throw new Error('Not authenticated');
+  const accessToken = await requireAccessToken();
 
   const response = await fetch(`${SPOTIFY_CONFIG.API_BASE}${endpoint}`, {
     ...options,
@@ -209,6 +214,10 @@ function mapSearchItems<T, R>(
 }
 
 export const spotifyService = {
+  async getAccessToken(): Promise<string> {
+    return requireAccessToken();
+  },
+
   async initiateAuth(): Promise<void> {
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = await generateCodeChallenge(codeVerifier);
