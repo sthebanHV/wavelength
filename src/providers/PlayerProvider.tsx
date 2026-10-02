@@ -212,6 +212,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       const latestTrack = usePlayerStore.getState().currentTrack;
       if (latestTrack?.id !== endedTrack.id || latestTrack.source !== endedTrack.source) return;
       if (candidates.length === 0) {
+        if (usePlayerStore.getState().playRandomFromQueue()) return;
         usePlayerStore.getState().setPlaybackError(
           spotifyLookupError
             ? `No se pudieron cargar canciones aleatorias de Spotify: ${spotifyLookupError}`
@@ -397,9 +398,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         }
         spotifySdkTrackIdRef.current = sdkTrackId;
         const ended = state.paused
-          && wasSpotifyPlayingRef.current
+          && (wasSpotifyPlayingRef.current || store.isPlaying)
           && state.duration > 0
-          && state.position >= state.duration - 1500;
+          && Math.max(state.position, lastSpotifyPositionRef.current) >= state.duration - 3000;
         wasSpotifyPlayingRef.current = !state.paused;
         lastSpotifyPositionRef.current = state.position;
         if (ended) {
