@@ -67,6 +67,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     getNextTrack,
   } = usePlayerStore();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const [spotifySdkUnavailable, setSpotifySdkUnavailable] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const spotifyPlayerRef = useRef<SpotifySdkPlayer | null>(null);
@@ -79,6 +80,26 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const crossfadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSeekingRef = useRef(false);
   const mediaSessionSupported = typeof navigator !== 'undefined' && 'mediaSession' in navigator;
+
+  const playSpotifyPreview = useCallback(async (track: Track, message: string): Promise<boolean> => {
+    const audio = audioRef.current;
+    if (!track.previewUrl || !audio) return false;
+    activePlaybackModeRef.current = 'audio';
+    audio.src = track.previewUrl;
+    audio.load();
+    try {
+      await audio.play();
+      usePlayerStore.setState({ isPlaying: true, position: 0, duration: track.duration });
+      usePlayerStore.getState().setPlaybackError(message);
+      return true;
+    } catch {
+      usePlayerStore.setState({
+        isPlaying: false,
+        playbackError: 'Spotify no pudo iniciar el avance de esta canción.',
+      });
+      return false;
+    }
+  }, []);
 
   useEffect(() => {
     audioRef.current = new Audio();
@@ -201,6 +222,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       document.addEventListener('pointerdown', activatePlayer, true);
 
       player.addListener('ready', ({ device_id }) => {
+        setSpotifySdkUnavailable(false);
         setSpotifyDeviceId(device_id);
         lastSpotifyTrackIdRef.current = null;
       });
@@ -234,12 +256,15 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         });
       });
       player.addListener('initialization_error', ({ message }) => {
+        setSpotifySdkUnavailable(true);
         usePlayerStore.getState().setPlaybackError(`No se pudo iniciar el reproductor de Spotify: ${message}`);
       });
       player.addListener('authentication_error', ({ message }) => {
+        setSpotifySdkUnavailable(true);
         usePlayerStore.getState().setPlaybackError(`Spotify no autorizó la reproducción: ${message}`);
       });
       player.addListener('account_error', ({ message }) => {
+        setSpotifySdkUnavailable(true);
         usePlayerStore.getState().setPlaybackError(`La reproducción completa requiere Spotify Premium: ${message}`);
       });
       player.addListener('playback_error', ({ message }) => {
@@ -257,6 +282,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         script.src = SPOTIFY_SDK_URL;
         script.async = true;
         script.onerror = () => {
+          setSpotifySdkUnavailable(true);
           usePlayerStore.getState().setPlaybackError('No se pudo cargar el reproductor web de Spotify.');
         };
         document.body.appendChild(script);
@@ -378,7 +404,23 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
     const player = spotifyPlayerRef.current;
     const deviceId = spotifyDeviceId;
-    if (!player || !deviceId || !isPlaying) return;
+    if (!player || !deviceId) {
+      if (!spotifySdkUnavailable || !isPlaying || lastSpotifyTrackIdRef.current === currentTrack.id) return;
+      lastSpotifyTrackIdRef.current = currentTrack.id;
+      void playSpotifyPreview(
+        currentTrack,
+        'El reproductor completo de Spotify no está disponible; reproduciendo el avance si existe.'
+      ).then(previewStarted => {
+        if (previewStarted) return;
+        activePlaybackModeRef.current = 'loading';
+        usePlayerStore.getState().setPlaybackError(
+          'Spotify no pudo iniciar el reproductor completo y esta canción no ofrece avance. Prueba otra canción o revisa si tu cuenta es Premium.'
+        );
+        usePlayerStore.setState({ isPlaying: false });
+      });
+      return;
+    }
+    if (!isPlaying) return;
 
     if (lastSpotifyTrackIdRef.current === currentTrack.id) {
       return;
@@ -394,19 +436,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         await spotifyService.transferPlayback([deviceId]);
         await spotifyService.play(undefined, [`spotify:track:${track.id}`], undefined, deviceId);
       } catch (error) {
-        if (track.previewUrl && audioRef.current) {
-          activePlaybackModeRef.current = 'audio';
-          audioRef.current.src = track.previewUrl;
-          audioRef.current.load();
-          try {
-            await audioRef.current.play();
-            usePlayerStore.setState({ isPlaying: true, position: 0, duration: audioRef.current.duration * 1000 || track.duration });
-            usePlayerStore.getState().setPlaybackError('No se pudo iniciar la reproducción completa de Spotify; reproduciendo el avance disponible.');
-            return;
-          } catch {
-            // Report the original Spotify playback error below.
-          }
+        lastSpotifyTrackIdRef.current = null;
+        const previewStarted = await playSpotifyPreview(
+          track,
+          'No se pudo iniciar la reproducción completa de Spotify; reproduciendo el avance disponible.'
+        );
+        if (previewStarted) {
+          lastSpotifyTrackIdRef.current = track.id;
+          setSpotifySdkUnavailable(true);
+          return;
         }
+        lastSpotifyTrackIdRef.current = null;
         const message = error instanceof Error ? error.message : 'No se pudo iniciar la reproducción.';
         usePlayerStore.getState().setPlaybackError(
           message.includes('Premium') || message.includes('403')
@@ -418,7 +458,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     };
 
     void playOnDevice(currentTrack);
-  }, [currentTrack, isAuthenticated, isPlaying, spotifyDeviceId]);
+  }, [currentTrack, isAuthenticated, isPlaying, playSpotifyPreview, spotifyDeviceId, spotifySdkUnavailable]);
 
   useEffect(() => {
     if (isSeekingRef.current) return;
