@@ -356,9 +356,9 @@ export function Library() {
               <ListMusic className="h-16 w-16 mb-4 text-text-muted/30" />
               <h3 className="text-lg font-medium mb-1">No se encontraron listas</h3>
               <p className="text-sm mb-4">Crea tu primera lista de reproducción</p>
-<Button asChild variant="primary">
-  <Link to="/playlists">Crear lista</Link>
-</Button>
+<Link to="/playlists" className="inline-flex items-center justify-center rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover">
+  Crear lista
+</Link>
             </div>
           ) : (
             <ScrollArea className="h-full">

@@ -205,7 +205,9 @@ export function CollectionDetail() {
   if (!collection) {
     return (
       <section className="mx-auto max-w-4xl space-y-4">
-        <Button asChild variant="ghost"><Link to={kind === 'playlist' ? '/playlists' : '/library'}><ArrowLeft className="mr-2 h-4 w-4" />Volver</Link></Button>
+        <Link to={kind === 'playlist' ? '/playlists' : '/library'} className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-text-secondary hover:bg-bg-hover hover:text-text-primary">
+          <ArrowLeft className="h-4 w-4" />Volver
+        </Link>
         <p className="rounded-lg border border-error/30 bg-error/10 p-4 text-error" role="alert">{error || 'No se encontró este elemento.'}</p>
       </section>
     );
@@ -213,7 +215,9 @@ export function CollectionDetail() {
 
   return (
     <section className="mx-auto max-w-5xl space-y-7">
-      <Button asChild variant="ghost" size="sm"><Link to={kind === 'playlist' ? '/playlists' : '/library'}><ArrowLeft className="mr-2 h-4 w-4" />Volver</Link></Button>
+      <Link to={kind === 'playlist' ? '/playlists' : '/library'} className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium text-text-secondary hover:bg-bg-hover hover:text-text-primary">
+        <ArrowLeft className="h-4 w-4" />Volver
+      </Link>
       <header className="flex flex-col gap-5 rounded-2xl border border-border-default bg-surface p-5 sm:flex-row sm:items-end">
         {artwork
           ? <img src={artwork} alt="" className="h-44 w-44 rounded-xl object-cover shadow-lg" />

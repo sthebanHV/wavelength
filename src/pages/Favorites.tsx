@@ -31,7 +31,9 @@ export function Favorites() {
           <Music className="mx-auto mb-4 h-12 w-12 text-text-muted/40" />
           <h2 className="text-lg font-semibold">Aún no tienes favoritos</h2>
           <p className="mt-2 text-sm text-text-muted">Guarda canciones con el corazón para encontrarlas aquí.</p>
-          <Button asChild variant="outline" className="mt-5"><Link to="/search">Buscar música</Link></Button>
+          <Link to="/search" className="mt-5 inline-flex items-center justify-center rounded-xl border-2 border-border-strong px-4 py-2 text-sm font-medium text-text-primary hover:border-accent hover:bg-bg-hover">
+            Buscar música
+          </Link>
         </div>
       ) : (
         <div className="divide-y divide-border-default rounded-2xl border border-border-default bg-surface">
