@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Play,
   Pause,
@@ -24,6 +25,7 @@ import { usePlayerStore } from '@/stores/playerStore';
 import { useFavoritesStore } from '@/stores/favoritesStore';
 
 export function PlayerBar() {
+  const navigate = useNavigate();
   const {
     currentTrack,
     isPlaying,
@@ -298,7 +300,13 @@ export function PlayerBar() {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="hidden shrink-0 text-text-secondary hover:text-text-primary sm:inline-flex" aria-label="Pantalla completa">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden shrink-0 text-text-secondary hover:text-text-primary sm:inline-flex"
+                onClick={() => navigate('/now-playing')}
+                aria-label="Pantalla completa"
+              >
                 <Maximize2 className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
