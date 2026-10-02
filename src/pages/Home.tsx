@@ -157,11 +157,18 @@ export function Home() {
           </div>
           <div className="home-hero-art pointer-events-none absolute inset-y-0 right-0 hidden w-[53%] overflow-hidden lg:block" aria-hidden="true">
             {recentlyPlayed[0]?.albumArt && (
-              <img
-                src={recentlyPlayed[0].albumArt}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover opacity-45 mix-blend-screen"
-              />
+              <>
+                <img
+                  src={recentlyPlayed[0].albumArt}
+                  alt=""
+                  className="absolute inset-0 h-full w-full scale-110 object-cover opacity-25 blur-2xl"
+                />
+                <img
+                  src={recentlyPlayed[0].albumArt}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-contain p-3 opacity-75 drop-shadow-[0_0_28px_rgba(176,38,255,0.28)]"
+                />
+              </>
             )}
             <div className="absolute inset-0 bg-gradient-to-r from-[#10091a] via-transparent to-[#0b0712]/30" />
             <div className="absolute inset-y-0 right-[13%] flex items-center">

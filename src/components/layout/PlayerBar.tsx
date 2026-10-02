@@ -94,7 +94,7 @@ export function PlayerBar() {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-30 h-20 border-t border-[#2a1a3c] bg-[#08060d]/95 shadow-[0_-12px_36px_rgba(0,0,0,0.28)] backdrop-blur-xl">
       <div className="h-full max-w-screen-2xl mx-auto flex items-center justify-between gap-4 px-4 md:px-6">
-        <div className="flex items-center gap-4 min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           {currentTrack?.albumArt ? (
             <img
               src={currentTrack.albumArt}
@@ -109,7 +109,18 @@ export function PlayerBar() {
 
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-text-primary truncate">{currentTrack?.title || 'Nada reproduciéndose'}</p>
-            <p className="text-xs text-text-muted truncate">{currentTrack?.artist || 'Selecciona una canción'}</p>
+            <div className="flex min-w-0 items-center gap-2">
+              <p className="truncate text-xs text-text-muted">{currentTrack?.artist || 'Selecciona una canción'}</p>
+              {isPlaying && currentTrack && (
+                <span className="player-waveform shrink-0" aria-label="Reproduciendo">
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              )}
+            </div>
             {playbackError && (
               <div className="flex items-center gap-2 text-[10px]" role="status">
                 <p className="text-error truncate">{playbackError}</p>
@@ -147,14 +158,14 @@ export function PlayerBar() {
           </Tooltip>
         </div>
 
-        <div className="flex flex-col items-center gap-2 min-w-0 flex-1 md:flex-2">
-          <div className="flex items-center gap-4">
+        <div className="flex min-w-0 flex-1 flex-col items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-3">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={cn(shuffle && 'text-accent', 'text-text-secondary hover:text-text-primary')}
+                  className={cn('shrink-0 text-text-secondary hover:text-text-primary', shuffle && 'text-accent')}
                   onClick={toggleShuffleHandler}
                   aria-label={shuffle ? 'Desactivar aleatorio' : 'Activar aleatorio'}
                 >
@@ -169,7 +180,7 @@ export function PlayerBar() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-text-secondary hover:text-text-primary"
+                  className="shrink-0 text-text-secondary hover:text-text-primary"
                   onClick={previous}
                   aria-label="Anterior"
                 >
@@ -183,15 +194,16 @@ export function PlayerBar() {
               <TooltipTrigger asChild>
                 <Button
                   variant="primary"
-                  size="lg"
-                  className="h-12 w-12 rounded-full"
+                  size="icon"
+                  className="player-play-toggle h-12 w-12 shrink-0 rounded-full p-0"
+                  data-playing={isPlaying}
                   onClick={togglePlay}
                   aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
                 >
                   {isPlaying ? (
-                    <Pause className="h-6 w-6" />
+                    <Pause className="h-6 w-6 shrink-0" strokeWidth={2.5} />
                   ) : (
-                    <Play className="h-6 w-6 ml-1" />
+                    <Play className="ml-0.5 h-6 w-6 shrink-0" strokeWidth={2.5} />
                   )}
                 </Button>
               </TooltipTrigger>
@@ -203,7 +215,7 @@ export function PlayerBar() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-text-secondary hover:text-text-primary"
+                  className="shrink-0 text-text-secondary hover:text-text-primary"
                   onClick={next}
                   aria-label="Siguiente"
                 >
@@ -218,7 +230,7 @@ export function PlayerBar() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={cn(repeatMode !== 'off' && 'text-accent', 'text-text-secondary hover:text-text-primary')}
+                  className={cn('shrink-0 text-text-secondary hover:text-text-primary', repeatMode !== 'off' && 'text-accent')}
                   onClick={toggleRepeatHandler}
                   aria-label={`Repetir: ${repeatMode === 'off' ? 'Desactivado' : repeatMode === 'context' ? 'Lista' : 'Canción'}`}
                 >
@@ -229,7 +241,7 @@ export function PlayerBar() {
             </Tooltip>
           </div>
 
-          <div className="flex items-center gap-3 w-full max-w-md">
+          <div className="flex w-full min-w-0 max-w-md items-center gap-2 sm:gap-3">
             <span className="text-xs text-text-muted w-10 text-right">{formatDuration(position)}</span>
             <Slider
               max={duration || 100}
@@ -242,10 +254,10 @@ export function PlayerBar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 min-w-0 flex-1 justify-end">
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-text-secondary hover:text-text-primary" aria-label="Dispositivos">
+              <Button variant="ghost" size="icon" className="shrink-0 text-text-secondary hover:text-text-primary" aria-label="Dispositivos">
                 <Mic className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
@@ -257,7 +269,7 @@ export function PlayerBar() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-text-secondary hover:text-text-primary"
+                className="shrink-0 text-text-secondary hover:text-text-primary"
                 onClick={toggleMute}
                 aria-label={volume > 0 ? 'Silenciar' : 'Activar sonido'}
               >
@@ -271,13 +283,13 @@ export function PlayerBar() {
             max={100}
             value={[volume * 100]}
             onValueChange={handleVolumeChange}
-            className="w-24 h-1.5"
+            className="hidden h-1.5 w-24 shrink-0 sm:flex"
             step={1}
           />
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-text-secondary hover:text-text-primary" aria-label="Cola de reproducción">
+              <Button variant="ghost" size="icon" className="hidden shrink-0 text-text-secondary hover:text-text-primary sm:inline-flex" aria-label="Cola de reproducción">
                 <ListMusic className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
@@ -286,7 +298,7 @@ export function PlayerBar() {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-text-secondary hover:text-text-primary" aria-label="Pantalla completa">
+              <Button variant="ghost" size="icon" className="hidden shrink-0 text-text-secondary hover:text-text-primary sm:inline-flex" aria-label="Pantalla completa">
                 <Maximize2 className="h-5 w-5" />
               </Button>
             </TooltipTrigger>

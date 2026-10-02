@@ -375,6 +375,26 @@
   }
 }
 
+@keyframes player-wave {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes player-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(176 38 255 / 32%), 0 0 22px rgb(176 38 255 / 36%);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgb(176 38 255 / 0%), 0 0 30px rgb(176 38 255 / 52%);
+  }
+}
+
 @layer components {
   .home-dashboard > section {
     animation: home-rise 550ms both;
@@ -447,6 +467,38 @@
     --bar-height: 68px;
     --bar-speed: 680ms;
     animation-delay: -300ms;
+  }
+
+  .player-waveform {
+    display: inline-flex;
+    height: 15px;
+    align-items: center;
+    gap: 2px;
+    color: #d687ff;
+  }
+
+  .player-waveform i {
+    display: block;
+    width: 2px;
+    height: 100%;
+    border-radius: 999px;
+    background: currentColor;
+    transform-origin: center;
+    animation: player-wave 650ms ease-in-out infinite;
+  }
+
+  .player-waveform i:nth-child(2n) {
+    animation-delay: -260ms;
+    animation-duration: 480ms;
+  }
+
+  .player-waveform i:nth-child(3n) {
+    animation-delay: -130ms;
+    animation-duration: 780ms;
+  }
+
+  .player-play-toggle[data-playing='true'] {
+    animation: player-pulse 1.8s ease-in-out infinite;
   }
 
   .home-card {
