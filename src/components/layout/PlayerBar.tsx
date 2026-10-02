@@ -14,6 +14,7 @@ import {
   Mic,
   ListMusic,
   Maximize2,
+  ExternalLink,
 } from 'lucide-react';
 import { cn, formatDuration } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -109,7 +110,23 @@ export function PlayerBar() {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-text-primary truncate">{currentTrack?.title || 'Nada reproduciéndose'}</p>
             <p className="text-xs text-text-muted truncate">{currentTrack?.artist || 'Selecciona una canción'}</p>
-            {playbackError && <p className="text-[10px] text-error truncate" role="status">{playbackError}</p>}
+            {playbackError && (
+              <div className="flex items-center gap-2 text-[10px]" role="status">
+                <p className="text-error truncate">{playbackError}</p>
+                {currentTrack?.source === 'spotify' && currentTrack.url && (
+                  <a
+                    href={currentTrack.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex flex-shrink-0 items-center gap-1 text-accent hover:underline"
+                    aria-label={`Abrir ${currentTrack.title} en Spotify`}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Spotify
+                  </a>
+                )}
+              </div>
+            )}
             {favoriteError && <p className="text-[10px] text-error truncate" role="alert">{favoriteError}</p>}
           </div>
 
