@@ -42,7 +42,13 @@ export function Header() {
         <Menu className="h-5 w-5" />
       </Button>
 
-      <form onSubmit={handleSearch} className={cn('relative flex-1 max-w-md md:max-w-lg', showSearch && 'max-w-xl')}>
+      <form
+        onSubmit={handleSearch}
+        className={cn(
+          'absolute left-1/2 w-[min(36rem,calc(100%-13rem))] -translate-x-1/2',
+          showSearch && 'max-w-xl'
+        )}
+      >
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
           <input
@@ -69,7 +75,7 @@ export function Header() {
         </div>
       </form>
 
-      <div className="flex items-center gap-2 ml-4">
+      <div className="ml-auto flex items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
