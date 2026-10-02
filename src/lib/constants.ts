@@ -1,12 +1,18 @@
 const productionSpotifyRedirectUri = 'https://wavelength-reproductor-musica.vercel.app/callback';
 const isVercelDomain = window.location.hostname.endsWith('.vercel.app');
-const configuredRedirectUri = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
+const configuredRedirectUri = import.meta.env.VITE_SPOTIFY_REDIRECT_URI?.trim();
+const defaultSpotifyRedirectUri = (() => {
+  if (isVercelDomain) return productionSpotifyRedirectUri;
+
+  const redirectUri = new URL('/callback', window.location.origin);
+  // Spotify rejects the `localhost` hostname; use its permitted loopback IP form.
+  if (redirectUri.hostname === 'localhost') redirectUri.hostname = '127.0.0.1';
+  return redirectUri.toString();
+})();
 
 export const SPOTIFY_CONFIG = {
   CLIENT_ID: import.meta.env.VITE_SPOTIFY_CLIENT_ID || '',
-  REDIRECT_URI: isVercelDomain
-    ? productionSpotifyRedirectUri
-    : configuredRedirectUri || `${window.location.origin}/callback`,
+  REDIRECT_URI: configuredRedirectUri || defaultSpotifyRedirectUri,
   SCOPES: [
     'user-read-private',
     'user-read-email',
@@ -36,6 +42,7 @@ export const STORAGE_KEYS = {
   AUTH_TOKENS: 'wavelength-spotify-tokens',
   AUTH_STATE: 'wavelength-auth-state',
   SPOTIFY_AUTH_TRANSACTION: 'wavelength-spotify-auth-transaction',
+  SPOTIFY_AUTH_REDIRECT: 'wavelength-spotify-auth-redirect',
   PLAYER_STATE: 'wavelength-player-state',
   LIBRARY_FILTERS: 'wavelength-library-filters',
   QUEUE: 'wavelength-queue',

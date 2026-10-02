@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Plus,
   Search,
@@ -17,6 +17,8 @@ import {
   Download,
   Clock,
   Calendar,
+  ExternalLink,
+  Youtube,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -31,6 +33,7 @@ import { formatDuration, formatDurationLong, formatNumber } from '@/lib/utils';
 import { useLibraryStore } from '@/stores/libraryStore';
 import { localFilesService } from '@/services/localFiles';
 import { spotifyService } from '@/services/spotify';
+import { ytMusicService } from '@/services/ytMusic';
 import { cn } from '@/lib/utils';
 import type { Playlist, Track } from '@/types';
 import { usePlayerStore } from '@/stores/playerStore';
@@ -39,12 +42,14 @@ import { useAuthStore } from '@/stores/authStore';
 export function Playlists() {
   const { playlists, setPlaylists, addPlaylist, updatePlaylist, removePlaylist } = useLibraryStore();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [localPlaylists, setLocalPlaylists] = useState<Playlist[]>([]);
   const [spotifyPlaylists, setSpotifyPlaylists] = useState<Playlist[]>([]);
+  const [youtubePlaylists, setYoutubePlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'tracks' | 'duration'>('recent');
-  const [filterSource, setFilterSource] = useState<'all' | 'local' | 'spotify'>('all');
+  const [filterSource, setFilterSource] = useState<'all' | 'local' | 'spotify' | 'youtube'>('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [newPlaylistDescription, setNewPlaylistDescription] = useState('');
@@ -63,11 +68,8 @@ export function Playlists() {
 
   useEffect(() => {
     if (searchParams.get('create') !== '1') return;
-    setShowCreateDialog(true);
-    const nextSearchParams = new URLSearchParams(searchParams);
-    nextSearchParams.delete('create');
-    setSearchParams(nextSearchParams, { replace: true });
-  }, [searchParams, setSearchParams]);
+    navigate('/playlists/new', { replace: true });
+  }, [searchParams, navigate]);
 
   const loadPlaylists = async () => {
     setLoading(true);
@@ -82,8 +84,33 @@ export function Playlists() {
         setPageError(error instanceof Error ? error.message : 'No se pudieron cargar tus listas de Spotify.');
       }
     }
+    let youtube: Playlist[] = [];
+    try {
+      const status = await ytMusicService.getStatus();
+      if (status.connected) {
+        youtube = (await ytMusicService.getPlaylists()).map(item => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          coverArt: item.coverArt,
+          owner: 'YouTube Music',
+          isPublic: item.isPublic,
+          collaborative: false,
+          tracks: [],
+          totalTracks: item.totalTracks,
+          duration: item.duration,
+          source: 'youtube',
+          sourceId: item.id,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        }));
+      }
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : 'No se pudieron cargar tus listas de YouTube Music.');
+    }
     setSpotifyPlaylists(spotify);
-    setPlaylists([...local, ...spotify]);
+    setYoutubePlaylists(youtube);
+    setPlaylists([...local, ...spotify, ...youtube]);
     setLoading(false);
   };
 
@@ -169,6 +196,10 @@ export function Playlists() {
 
   const handlePlayPlaylist = async (playlist: Playlist) => {
     setPageError(null);
+    if (playlist.source === 'youtube') {
+      window.open(`https://music.youtube.com/playlist?list=${encodeURIComponent(playlist.sourceId || playlist.id)}`, '_blank', 'noopener,noreferrer');
+      return;
+    }
     try {
       const fullPlaylist = playlist.source === 'spotify'
         ? await spotifyService.getPlaylist(playlist.id)
@@ -183,7 +214,7 @@ export function Playlists() {
     }
   };
 
-  const allPlaylists = [...localPlaylists, ...spotifyPlaylists];
+  const allPlaylists = [...localPlaylists, ...spotifyPlaylists, ...youtubePlaylists];
 
   const filteredPlaylists = allPlaylists
     .filter(p => p.name.toLowerCase().includes(playlistQuery.toLowerCase()))
@@ -227,11 +258,15 @@ export function Playlists() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button variant="primary" size="sm" onClick={() => navigate('/playlists/new')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Crear playlist
+          </Button>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button variant="primary" size="sm">
+              <Button variant="outline" size="sm" title="Crear una lista local o de Spotify">
                 <Plus className="h-4 w-4 mr-2" />
-                Crear lista
+                Local / Spotify
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -301,7 +336,7 @@ export function Playlists() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Select value={filterSource} onValueChange={(value) => setFilterSource(value as 'all' | 'local' | 'spotify')}>
+          <Select value={filterSource} onValueChange={(value) => setFilterSource(value as 'all' | 'local' | 'spotify' | 'youtube')}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Todas" />
             </SelectTrigger>
@@ -309,6 +344,7 @@ export function Playlists() {
               <SelectItem value="all">Todas</SelectItem>
               <SelectItem value="local">Local</SelectItem>
               <SelectItem value="spotify">Spotify</SelectItem>
+              <SelectItem value="youtube">YouTube Music</SelectItem>
             </SelectContent>
           </Select>
           <Select value={sortBy} onValueChange={(value: 'recent' | 'name' | 'tracks' | 'duration') => setSortBy(value)}>
@@ -347,8 +383,8 @@ export function Playlists() {
         <div className="flex flex-col items-center justify-center flex-1 text-text-muted">
           <ListMusic className="h-24 w-24 mb-6 text-text-muted/30" />
           <h2 className="text-xl font-medium mb-2">No hay listas de reproducción</h2>
-          <p className="text-sm mb-6">Crea tu primera lista o importa desde Spotify</p>
-          <Button variant="primary" onClick={() => setShowCreateDialog(true)}>
+          <p className="text-sm mb-6">Arma una ruta con tu catálogo y YouTube Music.</p>
+          <Button variant="primary" onClick={() => navigate('/playlists/new')}>
             <Plus className="h-4 w-4 mr-2" />
             Crear mi primera lista
           </Button>
@@ -446,7 +482,8 @@ function PlaylistCard({
 }) {
   const isEditing = editingPlaylist?.id === playlist.id;
   const userId = useAuthStore(state => state.user?.id);
-  const canEdit = playlist.source === 'local' || playlist.ownerId === userId;
+  const canEdit = playlist.source === 'local' || (playlist.source === 'spotify' && playlist.ownerId === userId);
+  const sourceLabel = playlist.source === 'spotify' ? 'Spotify' : playlist.source === 'youtube' ? 'YouTube Music' : 'Local';
 
   return (
     <div className="group relative bg-surface border border-border-default rounded-xl overflow-hidden hover:border-border-strong hover:shadow-lg transition-all">
@@ -459,13 +496,13 @@ function PlaylistCard({
           </div>
         )}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-          <Button variant="primary" size="icon" aria-label={`Reproducir ${playlist.name}`} onClick={() => onPlay(playlist)} className="opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all">
-            <Play className="h-5 w-5" />
+          <Button variant="primary" size="icon" aria-label={playlist.source === 'youtube' ? `Abrir ${playlist.name} en YouTube Music` : `Reproducir ${playlist.name}`} onClick={() => onPlay(playlist)} className="opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all">
+            {playlist.source === 'youtube' ? <ExternalLink className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </Button>
         </div>
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Badge variant={playlist.source === 'spotify' ? 'accent' : 'outline'} size="sm" className="text-xs">
-            {playlist.source === 'spotify' ? 'Spotify' : 'Local'}
+          <Badge variant={playlist.source !== 'local' ? 'accent' : 'outline'} size="sm" className="text-xs">
+            {sourceLabel}
           </Badge>
         </div>
       </div>
@@ -493,12 +530,12 @@ function PlaylistCard({
           </div>
         ) : (
           <>
-            <Link to={`/playlists/${playlist.id}`} className="block truncate font-medium hover:text-accent">{playlist.name}</Link>
+            {playlist.source === 'youtube' ? <a href={`https://music.youtube.com/playlist?list=${encodeURIComponent(playlist.sourceId || playlist.id)}`} target="_blank" rel="noreferrer" className="block truncate font-medium hover:text-accent">{playlist.name}</a> : <Link to={`/playlists/${playlist.id}`} className="block truncate font-medium hover:text-accent">{playlist.name}</Link>}
             <p className="text-sm text-text-muted truncate">{playlist.owner || 'Tú'}</p>
             <div className="flex items-center justify-between text-xs text-text-muted">
               <span>{playlist.totalTracks} canciones • {formatDurationLong(playlist.duration)}</span>
               <Badge variant="outline" size="sm" className="text-[10px]">
-                {playlist.source === 'spotify' ? 'Spotify' : 'Local'}
+                {sourceLabel}
               </Badge>
             </div>
           </>
@@ -513,10 +550,10 @@ function PlaylistCard({
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{playlist.name}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onPlay(playlist)}>Reproducir</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onPlay(playlist)}>{playlist.source === 'youtube' ? 'Abrir en YouTube Music' : 'Reproducir'}</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem disabled={!canEdit} onClick={() => onEdit(playlist)}>Editar</DropdownMenuItem>
-              <DropdownMenuItem className="text-error" onClick={() => onDelete(playlist)}>
+              <DropdownMenuItem className="text-error" disabled={playlist.source === 'youtube'} onClick={() => onDelete(playlist)}>
                 {playlist.source === 'spotify' ? 'Dejar de seguir' : 'Eliminar'}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -554,7 +591,7 @@ function PlaylistRow({
 }) {
   const isEditing = editingPlaylist?.id === playlist.id;
   const userId = useAuthStore(state => state.user?.id);
-  const canEdit = playlist.source === 'local' || playlist.ownerId === userId;
+  const canEdit = playlist.source === 'local' || (playlist.source === 'spotify' && playlist.ownerId === userId);
 
   return (
     <tr className="border-b border-border-default/50 hover:bg-bg-hover transition-colors">
@@ -576,6 +613,8 @@ function PlaylistRow({
                 className="px-2 py-1 bg-bg-tertiary border border-accent rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm font-medium"
                 autoFocus
               />
+            ) : playlist.source === 'youtube' ? (
+              <a href={`https://music.youtube.com/playlist?list=${encodeURIComponent(playlist.sourceId || playlist.id)}`} target="_blank" rel="noreferrer" className="block truncate font-medium hover:text-accent">{playlist.name}</a>
             ) : (
               <Link to={`/playlists/${playlist.id}`} className="block truncate font-medium hover:text-accent">{playlist.name}</Link>
             )}
@@ -601,10 +640,10 @@ function PlaylistRow({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onPlay(playlist)}>Reproducir</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onPlay(playlist)}>{playlist.source === 'youtube' ? 'Abrir en YouTube Music' : 'Reproducir'}</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem disabled={!canEdit} onClick={() => onEdit(playlist)}>Editar</DropdownMenuItem>
-            <DropdownMenuItem className="text-error" onClick={() => onDelete(playlist)}>
+            <DropdownMenuItem className="text-error" disabled={playlist.source === 'youtube'} onClick={() => onDelete(playlist)}>
               {playlist.source === 'spotify' ? 'Dejar de seguir' : 'Eliminar'}
             </DropdownMenuItem>
           </DropdownMenuContent>

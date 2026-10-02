@@ -46,15 +46,17 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const isPlaylistComposer = location.pathname === '/playlists/new';
   const { isAuthenticated } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
 
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 flex h-full flex-col border-r border-[#21172e] bg-[#08060d] shadow-[8px_0_30px_rgba(0,0,0,0.18)] transition-all duration-300',
-        collapsed ? 'w-20' : 'w-64'
+        'wavelength-sidebar fixed left-0 top-0 z-40 flex h-full flex-col border-r border-[#21172e] bg-[#08060d] shadow-[8px_0_30px_rgba(0,0,0,0.18)] transition-all duration-300',
+        collapsed ? 'w-20' : 'w-[212px]'
       )}
+      data-collapsed={collapsed}
     >
       <div className="flex h-16 items-center justify-between px-4 border-b border-border-default">
         {!collapsed && (
@@ -78,7 +80,9 @@ export function Sidebar() {
 
       <ScrollArea className="flex-1 overflow-y-auto">
         <nav className="px-3 py-4 space-y-1" aria-label="Navegación principal">
-          {NAV_ITEMS.map((item) => {
+          {(isPlaylistComposer
+            ? [...NAV_ITEMS.filter(item => item.path !== '/radio' && item.path !== '/upload'), { path: '/settings', icon: Settings, label: 'Ajustes', badge: null }]
+            : NAV_ITEMS).map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             return (
               <NavLink
@@ -110,7 +114,7 @@ export function Sidebar() {
           })}
         </nav>
 
-        {!collapsed && (
+        {!collapsed && !isPlaylistComposer && (
           <>
             <Separator className="my-4" />
             <div className="px-3 mb-2">
@@ -119,7 +123,7 @@ export function Sidebar() {
                 variant="ghost"
                 size="sm"
                 className="w-full justify-start gap-3"
-                onClick={() => navigate('/playlists?create=1')}
+                onClick={() => navigate('/playlists/new')}
               >
                 <Plus className="h-4 w-4" />
                 <span>Crear lista</span>

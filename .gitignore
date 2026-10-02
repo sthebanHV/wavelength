@@ -2,6 +2,8 @@ node_modules
 dist
 dist-ssr
 coverage
+.impeccable/
+__pycache__/
 *.local
 .env
 .env.*

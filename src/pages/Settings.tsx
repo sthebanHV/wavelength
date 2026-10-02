@@ -32,6 +32,8 @@ import { usePlayerStore } from '@/stores/playerStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useLibraryStore } from '@/stores/libraryStore';
 import { localFilesService } from '@/services/localFiles';
+import { spotifyService } from '@/services/spotify';
+import { YouTubeMusicConnectionCard } from '@/components/settings/YouTubeMusicConnectionCard';
 import { formatBytes } from '@/lib/utils';
 
 const loadStats = async (setStats: React.Dispatch<React.SetStateAction<{
@@ -56,7 +58,7 @@ const loadStats = async (setStats: React.Dispatch<React.SetStateAction<{
 export function Settings() {
   const { theme, setTheme } = useThemeStore();
   const { volume, crossfade, setCrossfade, repeatMode, setRepeatMode } = usePlayerStore();
-  const { user, isAuthenticated, logout, login } = useAuthStore();
+  const { user, isAuthenticated, logout, login, error: authError, isLoading: authLoading } = useAuthStore();
   const { tracks, refresh: refreshLibrary } = useLibraryStore();
 
   const [showClearDialog, setShowClearDialog] = useState(false);
@@ -363,7 +365,13 @@ export function Settings() {
                     </div>
                     <h3 className="font-semibold mb-1">Conecta tu cuenta</h3>
                     <p className="text-sm text-text-muted mb-4">Accede a tu biblioteca de Spotify, listas y más</p>
-                    <Button variant="primary" size="lg" onClick={login}>
+                    {!spotifyService.isConfigured() && (
+                      <p className="mx-auto mb-4 max-w-xl text-sm text-warning" role="status">
+                        Añade <code>VITE_SPOTIFY_CLIENT_ID</code> en las variables de entorno y vuelve a desplegar.
+                      </p>
+                    )}
+                    {authError && <p className="mb-4 text-sm text-error" role="alert">{authError}</p>}
+                    <Button variant="primary" size="lg" onClick={() => { void login(); }} disabled={!spotifyService.isConfigured() || authLoading} loading={authLoading}>
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Conectar con Spotify
                     </Button>
@@ -371,6 +379,9 @@ export function Settings() {
                 )}
               </CardContent>
             </Card>
+            <div className="mt-4">
+              <YouTubeMusicConnectionCard />
+            </div>
           </section>
 
           <section aria-label="Almacenamiento">

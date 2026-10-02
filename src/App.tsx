@@ -6,6 +6,7 @@ const Home = lazy(() => import('@/pages/Home').then(m => ({ default: m.Home })))
 const Library = lazy(() => import('@/pages/Library').then(m => ({ default: m.Library })));
 const Search = lazy(() => import('@/pages/Search').then(m => ({ default: m.Search })));
 const Playlists = lazy(() => import('@/pages/Playlists').then(m => ({ default: m.Playlists })));
+const PlaylistComposer = lazy(() => import('@/pages/PlaylistComposer').then(m => ({ default: m.PlaylistComposer })));
 const Favorites = lazy(() => import('@/pages/Favorites').then(m => ({ default: m.Favorites })));
 const CollectionDetail = lazy(() => import('@/pages/CollectionDetail').then(m => ({ default: m.CollectionDetail })));
 const NowPlaying = lazy(() => import('@/pages/NowPlaying').then(m => ({ default: m.NowPlaying })));
@@ -32,6 +33,7 @@ function App() {
           <Route path="library/:section" element={<Library />} />
           <Route path="search" element={<Search />} />
           <Route path="playlists" element={<Playlists />} />
+          <Route path="playlists/new" element={<PlaylistComposer />} />
           <Route path="playlists/:id" element={<CollectionDetail />} />
           <Route path="albums/:id" element={<CollectionDetail />} />
           <Route path="artists/:id" element={<CollectionDetail />} />

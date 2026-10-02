@@ -10,7 +10,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
 
-  login: () => Promise<void>;
+  login: (returnTo?: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   setUser: (user: User) => void;
@@ -27,12 +27,15 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       error: null,
 
-      login: async () => {
+      login: async (returnTo = '/') => {
         set({ isLoading: true, error: null });
         try {
-          await spotifyService.initiateAuth();
-        } catch {
-          set({ error: 'Failed to initiate login', isLoading: false });
+          await spotifyService.initiateAuth(returnTo);
+        } catch (error) {
+          set({
+            error: error instanceof Error ? error.message : 'No se pudo iniciar sesión con Spotify.',
+            isLoading: false,
+          });
         }
       },
 

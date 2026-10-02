@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Play,
   Pause,
@@ -26,6 +26,8 @@ import { useFavoritesStore } from '@/stores/favoritesStore';
 
 export function PlayerBar() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isPlaylistComposer = location.pathname === '/playlists/new';
   const {
     currentTrack,
     isPlaying,
@@ -89,12 +91,12 @@ export function PlayerBar() {
     }
   }, [currentTrack, isPlaying]);
 
-  if (!currentTrack && queue.length === 0) {
+  if (!currentTrack && queue.length === 0 && location.pathname !== '/playlists/new') {
     return null;
   }
 
   return (
-    <div className="player-bar fixed bottom-0 left-0 right-0 z-30 h-20 overflow-hidden border-t border-border-default bg-surface/95 shadow-[0_-12px_36px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+    <div className={`player-bar fixed bottom-0 left-0 right-0 z-30 h-20 overflow-hidden border-t border-border-default bg-surface/95 shadow-[0_-12px_36px_rgba(0,0,0,0.18)] backdrop-blur-xl ${isPlaylistComposer ? 'playlist-composer__player-bar' : ''}`}>
       <div className="h-full max-w-screen-2xl mx-auto flex items-center justify-between gap-4 px-4 md:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           {currentTrack?.albumArt ? (
@@ -161,22 +163,24 @@ export function PlayerBar() {
           </Tooltip>
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col items-center gap-2">
+        <div className={`flex min-w-0 flex-1 flex-col items-center gap-2 ${isPlaylistComposer ? 'playlist-composer__transport' : ''}`}>
           <div className="flex shrink-0 items-center gap-1 sm:gap-3">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn('shrink-0 text-text-secondary hover:text-text-primary', shuffle && 'text-accent')}
-                  onClick={toggleShuffleHandler}
-                  aria-label={shuffle ? 'Desactivar aleatorio' : 'Activar aleatorio'}
-                >
-                  <Shuffle className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Aleatorio</TooltipContent>
-            </Tooltip>
+            {!isPlaylistComposer && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn('shrink-0 text-text-secondary hover:text-text-primary', shuffle && 'text-accent')}
+                    onClick={toggleShuffleHandler}
+                    aria-label={shuffle ? 'Desactivar aleatorio' : 'Activar aleatorio'}
+                  >
+                    <Shuffle className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Aleatorio</TooltipContent>
+              </Tooltip>
+            )}
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -228,20 +232,22 @@ export function PlayerBar() {
               <TooltipContent>Siguiente</TooltipContent>
             </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn('shrink-0 text-text-secondary hover:text-text-primary', repeatMode !== 'off' && 'text-accent')}
-                  onClick={toggleRepeatHandler}
-                  aria-label={`Repetir: ${repeatMode === 'off' ? 'Desactivado' : repeatMode === 'context' ? 'Lista' : 'Canción'}`}
-                >
-                  <Repeat className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{repeatMode === 'off' ? 'Repetir desactivado' : repeatMode === 'context' ? 'Repetir lista' : 'Repetir canción'}</TooltipContent>
-            </Tooltip>
+            {!isPlaylistComposer && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn('shrink-0 text-text-secondary hover:text-text-primary', repeatMode !== 'off' && 'text-accent')}
+                    onClick={toggleRepeatHandler}
+                    aria-label={`Repetir: ${repeatMode === 'off' ? 'Desactivado' : repeatMode === 'context' ? 'Lista' : 'Canción'}`}
+                  >
+                    <Repeat className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{repeatMode === 'off' ? 'Repetir desactivado' : repeatMode === 'context' ? 'Repetir lista' : 'Repetir canción'}</TooltipContent>
+              </Tooltip>
+            )}
           </div>
 
           <div className="flex w-full min-w-0 max-w-md items-center gap-2 sm:gap-3">
@@ -250,6 +256,7 @@ export function PlayerBar() {
               max={duration || 100}
               value={[position]}
               onValueChange={handleSeek}
+              disabled={!currentTrack || duration <= 0}
               className="flex-1 h-1.5"
               step={1}
             />
@@ -263,15 +270,39 @@ export function PlayerBar() {
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="shrink-0 text-text-secondary hover:text-text-primary" aria-label="Dispositivos">
-                <Mic className="h-5 w-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Dispositivos</TooltipContent>
-          </Tooltip>
+        <div className={`flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2 ${isPlaylistComposer ? 'playlist-composer__options' : ''}`}>
+          {!isPlaylistComposer && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="shrink-0 text-text-secondary hover:text-text-primary" aria-label="Dispositivos">
+                  <Mic className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Dispositivos</TooltipContent>
+            </Tooltip>
+          )}
+
+          {isPlaylistComposer && (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className={cn('shrink-0 text-text-secondary hover:text-text-primary', shuffle && 'text-accent')} onClick={toggleShuffleHandler} aria-label={shuffle ? 'Desactivar aleatorio' : 'Activar aleatorio'}>
+                    <Shuffle className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Aleatorio</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className={cn('shrink-0 text-text-secondary hover:text-text-primary', repeatMode !== 'off' && 'text-accent')} onClick={toggleRepeatHandler} aria-label={`Repetir: ${repeatMode === 'off' ? 'Desactivado' : repeatMode === 'context' ? 'Lista' : 'Canción'}`}>
+                    <Repeat className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{repeatMode === 'off' ? 'Repetir desactivado' : repeatMode === 'context' ? 'Repetir lista' : 'Repetir canción'}</TooltipContent>
+              </Tooltip>
+            </>
+          )}
 
           <Tooltip>
             <TooltipTrigger asChild>
@@ -305,20 +336,22 @@ export function PlayerBar() {
             <TooltipContent>Cola</TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hidden shrink-0 text-text-secondary hover:text-text-primary sm:inline-flex"
-                onClick={() => navigate('/now-playing')}
-                aria-label="Pantalla completa"
-              >
-                <Maximize2 className="h-5 w-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Pantalla completa</TooltipContent>
-          </Tooltip>
+          {!isPlaylistComposer && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hidden shrink-0 text-text-secondary hover:text-text-primary sm:inline-flex"
+                  onClick={() => navigate('/now-playing')}
+                  aria-label="Pantalla completa"
+                >
+                  <Maximize2 className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Pantalla completa</TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
     </div>

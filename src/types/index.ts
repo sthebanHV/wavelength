@@ -64,7 +64,7 @@ export interface Playlist {
   tracks: Track[];
   totalTracks: number;
   duration: number;
-  source: 'local' | 'spotify';
+  source: 'local' | 'spotify' | 'youtube';
   sourceId?: string;
   createdAt: number;
   updatedAt: number;

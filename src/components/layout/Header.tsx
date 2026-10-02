@@ -104,7 +104,7 @@ export function Header() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative" aria-label="Cuenta">
               {user?.avatar ? (
                 <Avatar src={user.avatar} name={user.displayName} size="sm" />
               ) : (

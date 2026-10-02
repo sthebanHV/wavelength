@@ -16,9 +16,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const url = new URL(window.location.href);
     if (url.searchParams.get('connectSpotify') !== '1') return;
 
+    const returnTo = url.searchParams.get('returnTo') || '/';
     url.searchParams.delete('connectSpotify');
+    url.searchParams.delete('returnTo');
     window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
-    void login();
+    void login(returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/');
   }, [login]);
 
   useEffect(() => {

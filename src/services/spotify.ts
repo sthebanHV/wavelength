@@ -8,6 +8,8 @@ interface Tokens {
   tokenType: string;
 }
 
+let tokenRefresh: Promise<Tokens | null> | null = null;
+
 function generateCodeVerifier(): string {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
@@ -80,7 +82,8 @@ async function getValidAccessToken(): Promise<string | null> {
     return tokens.accessToken;
   }
 
-  const newTokens = await refreshAccessToken(tokens.refreshToken);
+  tokenRefresh ??= refreshAccessToken(tokens.refreshToken).finally(() => { tokenRefresh = null; });
+  const newTokens = await tokenRefresh;
   if (newTokens) {
     setStoredTokens(newTokens);
     return newTokens.accessToken;
@@ -179,6 +182,7 @@ function mapSpotifyArtist(item: SpotifyApi.ArtistObjectFull): Artist {
 }
 
 function mapSpotifyPlaylist(item: SpotifyApi.PlaylistObjectSimplified | SpotifyApi.PlaylistObjectFull): Playlist {
+  const playlistData = item as typeof item & { items?: { total?: number } };
   return {
     id: item.id,
     name: item.name,
@@ -189,7 +193,7 @@ function mapSpotifyPlaylist(item: SpotifyApi.PlaylistObjectSimplified | SpotifyA
     isPublic: item.public,
     collaborative: item.collaborative,
     tracks: [],
-    totalTracks: item.tracks?.total ?? 0,
+    totalTracks: playlistData.items?.total ?? item.tracks?.total ?? 0,
     duration: 0,
     source: 'spotify',
     sourceId: item.id,
@@ -214,18 +218,32 @@ function mapSearchItems<T, R>(
 }
 
 export const spotifyService = {
+  isConfigured(): boolean {
+    return Boolean(SPOTIFY_CONFIG.CLIENT_ID.trim());
+  },
+
   async getAccessToken(): Promise<string> {
     return requireAccessToken();
   },
 
-  async initiateAuth(): Promise<void> {
-    const productionUrl = new URL(SPOTIFY_CONFIG.REDIRECT_URI);
-    if (window.location.hostname.endsWith('.vercel.app') && window.location.origin !== productionUrl.origin) {
-      const stableAppUrl = new URL(window.location.href);
-      stableAppUrl.protocol = productionUrl.protocol;
-      stableAppUrl.host = productionUrl.host;
-      stableAppUrl.searchParams.set('connectSpotify', '1');
-      window.location.replace(stableAppUrl.toString());
+  async initiateAuth(returnTo = '/'): Promise<void> {
+    if (!this.isConfigured()) {
+      throw new Error('Spotify aún no está configurado. Añade VITE_SPOTIFY_CLIENT_ID en las variables de entorno y vuelve a desplegar.');
+    }
+
+    let redirectUrl: URL;
+    try {
+      redirectUrl = new URL(SPOTIFY_CONFIG.REDIRECT_URI);
+    } catch {
+      throw new Error('La URL de retorno de Spotify no es válida. Revisa VITE_SPOTIFY_REDIRECT_URI.');
+    }
+
+    if (window.location.origin !== redirectUrl.origin) {
+      localStorage.setItem(STORAGE_KEYS.SPOTIFY_AUTH_REDIRECT, returnTo);
+      const authStartUrl = new URL('/', redirectUrl.origin);
+      authStartUrl.searchParams.set('connectSpotify', '1');
+      authStartUrl.searchParams.set('returnTo', returnTo);
+      window.location.replace(authStartUrl.toString());
       return;
     }
 
@@ -233,6 +251,7 @@ export const spotifyService = {
     const codeChallenge = await generateCodeChallenge(codeVerifier);
     const state = crypto.randomUUID();
 
+    localStorage.setItem(STORAGE_KEYS.SPOTIFY_AUTH_REDIRECT, returnTo);
     localStorage.setItem(STORAGE_KEYS.SPOTIFY_AUTH_TRANSACTION, JSON.stringify({ codeVerifier, state }));
 
     const params = new URLSearchParams({
@@ -310,6 +329,12 @@ export const spotifyService = {
     return !!getStoredTokens();
   },
 
+  consumeAuthRedirect(): string {
+    const returnTo = localStorage.getItem(STORAGE_KEYS.SPOTIFY_AUTH_REDIRECT) || '/';
+    localStorage.removeItem(STORAGE_KEYS.SPOTIFY_AUTH_REDIRECT);
+    return returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/';
+  },
+
   async logout(): Promise<void> {
     clearStoredTokens();
   },
@@ -367,10 +392,12 @@ export const spotifyService = {
   },
 
   async addTracksToPlaylist(playlistId: string, trackUris: string[]): Promise<void> {
-    await spotifyFetch(`/playlists/${playlistId}/items`, {
-      method: 'POST',
-      body: JSON.stringify({ uris: trackUris }),
-    });
+    for (let index = 0; index < trackUris.length; index += 100) {
+      await spotifyFetch(`/playlists/${playlistId}/items`, {
+        method: 'POST',
+        body: JSON.stringify({ uris: trackUris.slice(index, index + 100) }),
+      });
+    }
   },
 
   async updatePlaylist(playlistId: string, input: { name: string; description?: string; isPublic?: boolean }): Promise<void> {

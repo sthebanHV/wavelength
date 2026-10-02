@@ -6,6 +6,7 @@ import { Loader2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/authStore';
+import { spotifyService } from '@/services/spotify';
 
 export function Callback() {
   const [searchParams] = useSearchParams();
@@ -30,7 +31,7 @@ export function Callback() {
       callbackStarted.current = true;
       handleCallback(code, state).then(success => {
         if (success) {
-          navigate('/', { replace: true });
+          navigate(spotifyService.consumeAuthRedirect(), { replace: true });
         }
       });
       return;
