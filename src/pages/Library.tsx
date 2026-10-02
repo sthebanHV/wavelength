@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type MouseEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Music,
@@ -475,8 +475,34 @@ function TrackRow({ track, index }: { track: Track; index: number }) {
 }
 
 function AlbumCard({ album }: { album: Album }) {
+  const handlePlayAlbum = async (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    try {
+      let albumTracks = album.tracks;
+      if (album.source === 'spotify' && albumTracks.length === 0) {
+        albumTracks = (await spotifyService.getAlbum(album.sourceId || album.id)).tracks;
+      } else if (album.source === 'local' && albumTracks.length === 0) {
+        albumTracks = (await localFilesService.getAllTracks()).filter(track =>
+          track.albumId === album.id || (track.album === album.name && track.artist === album.artist)
+        );
+      }
+
+      if (albumTracks.length === 0) {
+        usePlayerStore.getState().setPlaybackError(`El álbum “${album.name}” no tiene canciones disponibles para reproducir.`);
+        return;
+      }
+      usePlayerStore.getState().playTracks(albumTracks, 'album');
+    } catch (error) {
+      usePlayerStore.getState().setPlaybackError(
+        error instanceof Error ? `No se pudo cargar el álbum: ${error.message}` : 'No se pudo cargar el álbum.'
+      );
+    }
+  };
+
   return (
-    <Link to={`/albums/${album.id}`} className="group block">
+    <Link to={`/albums/${encodeURIComponent(album.sourceId || album.id)}`} className="group block">
       <div className="relative aspect-square overflow-hidden rounded-xl bg-bg-tertiary group-hover:scale-[1.02] transition-transform duration-200">
         {album.coverArt ? (
           <img src={album.coverArt} alt={album.name} className="w-full h-full object-cover" />
@@ -486,7 +512,13 @@ function AlbumCard({ album }: { album: Album }) {
           </div>
         )}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-          <Button variant="primary" size="icon" className="opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all">
+          <Button
+            variant="primary"
+            size="icon"
+            className="opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all"
+            onClick={handlePlayAlbum}
+            aria-label={`Reproducir álbum ${album.name}`}
+          >
             <Play className="h-5 w-5" />
           </Button>
         </div>
@@ -505,7 +537,7 @@ function AlbumCard({ album }: { album: Album }) {
 
 function ArtistCard({ artist }: { artist: Artist }) {
   return (
-    <Link to={`/artists/${artist.id}`} className="group block text-center">
+    <Link to={`/artists/${encodeURIComponent(artist.sourceId || artist.id)}`} className="group block text-center" aria-label={`Abrir artista ${artist.name}`}>
       <div className="relative aspect-square overflow-hidden rounded-full mx-auto mb-3 bg-bg-tertiary group-hover:scale-[1.05] transition-transform duration-200 max-w-[160px]">
         {artist.image ? (
           <img src={artist.image} alt={artist.name} className="w-full h-full object-cover" />

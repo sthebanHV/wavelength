@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/stores/authStore';
 import { useFavoritesStore } from '@/stores/favoritesStore';
 import { usePlayerStore } from '@/stores/playerStore';
+import { useLibraryStore } from '@/stores/libraryStore';
 import { localFilesService } from '@/services/localFiles';
 import { spotifyService } from '@/services/spotify';
 import { formatDuration } from '@/lib/utils';
@@ -22,6 +23,9 @@ export function CollectionDetail() {
   const favoriteTracks = useFavoritesStore(state => state.tracks);
   const toggleFavorite = useFavoritesStore(state => state.toggleFavorite);
   const playTracks = usePlayerStore(state => state.playTracks);
+  const cachedAlbums = useLibraryStore(state => state.albums);
+  const cachedArtists = useLibraryStore(state => state.artists);
+  const cachedTracks = useLibraryStore(state => state.tracks);
   const [collection, setCollection] = useState<Collection | null>(null);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,17 +46,31 @@ export function CollectionDetail() {
     const load = async () => {
       try {
         if (kind === 'album') {
-          const local = (await localFilesService.getAllAlbums()).find(album => album.id === id);
-          const album = local || await spotifyService.getAlbum(id);
+          const localAlbums = await localFilesService.getAllAlbums();
+          const local = localAlbums.find(album => album.id === id || album.sourceId === id);
+          const cached = cachedAlbums.find(album => album.id === id || album.sourceId === id);
+          let album = local || cached;
+          if (!album) {
+            album = await spotifyService.getAlbum(id);
+          } else if (album.source === 'spotify' && album.tracks.length === 0 && isAuthenticated) {
+            album = await spotifyService.getAlbum(album.sourceId || album.id);
+          }
           const albumTracks = album.source === 'local'
-            ? (await localFilesService.getAllTracks()).filter(track => track.albumId === album.id || track.album === album.name)
-            : album.tracks;
+            ? (await localFilesService.getAllTracks()).filter(track =>
+              track.albumId === album.id || (track.album === album.name && track.artist === album.artist)
+            )
+            : album.tracks.length > 0
+              ? album.tracks
+              : cachedTracks.filter(track =>
+                track.albumId === (album.sourceId || album.id)
+                || (track.album === album.name && track.artist === album.artist)
+              );
           if (!cancelled) {
             setCollection(album);
             setTracks(albumTracks);
           }
         } else if (kind === 'artist') {
-          const local = (await localFilesService.getAllArtists()).find(artist => artist.id === id);
+          const local = (await localFilesService.getAllArtists()).find(artist => artist.id === id || artist.sourceId === id);
           if (local) {
             const localTracks = await localFilesService.getAllTracks();
             if (!cancelled) {
@@ -60,16 +78,24 @@ export function CollectionDetail() {
               setTracks(local.topTracks.length ? local.topTracks : localTracks.filter(track => track.artistId === local.id || track.artist === local.name));
             }
           } else {
-            const [artist, topTracks, albums] = await Promise.all([
-              spotifyService.getArtist(id),
-              spotifyService.getArtistTopTracks(id),
-              spotifyService.getArtistAlbums(id),
-            ]);
-            artist.topTracks = topTracks;
-            artist.albums = albums;
+            const cached = cachedArtists.find(artist => artist.id === id || artist.sourceId === id);
+            let artist = cached || await spotifyService.getArtist(id);
+            let topTracks = artist.topTracks;
+            let albums = artist.albums;
+            if (isAuthenticated && (topTracks.length === 0 || albums.length === 0)) {
+              const [loadedTopTracks, loadedAlbums] = await Promise.all([
+                topTracks.length > 0 ? Promise.resolve(topTracks) : spotifyService.getArtistTopTracks(artist.sourceId || artist.id),
+                albums.length > 0 ? Promise.resolve(albums) : spotifyService.getArtistAlbums(artist.sourceId || artist.id),
+              ]);
+              topTracks = loadedTopTracks;
+              albums = loadedAlbums;
+            }
+            artist = { ...artist, topTracks, albums };
             if (!cancelled) {
               setCollection(artist);
-              setTracks(topTracks);
+              setTracks(topTracks.length > 0 ? topTracks : cachedTracks.filter(track =>
+                track.artistId === (artist.sourceId || artist.id) || track.artist === artist.name
+              ));
             }
             if (isAuthenticated) {
               const [following] = await spotifyService.checkFollowingArtists([id]);
@@ -95,7 +121,7 @@ export function CollectionDetail() {
 
     void load();
     return () => { cancelled = true; };
-  }, [id, isAuthenticated, kind]);
+  }, [id, isAuthenticated, kind, cachedAlbums, cachedArtists, cachedTracks]);
 
   const playlist = kind === 'playlist' ? collection as Playlist | null : null;
   const artist = kind === 'artist' ? collection as Artist | null : null;
@@ -109,7 +135,7 @@ export function CollectionDetail() {
       ? (collection as Playlist).owner || 'Lista de reproducción'
       : kind === 'album'
         ? (collection as Album).artist
-        : 'Artista de Spotify'
+        : (collection as Artist).source === 'local' ? 'Artista local' : 'Artista de Spotify'
     : '';
   const artwork = collection
     ? 'coverArt' in collection ? collection.coverArt : 'image' in collection ? collection.image : undefined
@@ -264,7 +290,7 @@ export function CollectionDetail() {
           <h2 className="mb-3 text-xl font-semibold">Álbumes</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {artist.albums.map(album => (
-              <Link key={album.id} to={`/albums/${album.id}`} className="rounded-xl border border-border-default bg-surface p-3 hover:bg-bg-hover">
+              <Link key={album.id} to={`/albums/${encodeURIComponent(album.sourceId || album.id)}`} className="rounded-xl border border-border-default bg-surface p-3 hover:bg-bg-hover">
                 {album.coverArt && <img src={album.coverArt} alt="" className="mb-2 aspect-square w-full rounded-lg object-cover" />}
                 <span className="block truncate text-sm font-medium">{album.name}</span>
                 <span className="text-xs text-text-muted">{album.releaseDate?.slice(0, 4)}</span>

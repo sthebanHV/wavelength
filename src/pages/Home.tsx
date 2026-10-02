@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Play,
   Clock,
@@ -23,62 +23,19 @@ import { localFilesService } from '@/services/localFiles';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { Track } from '@/types';
-
-interface FeaturedItem {
-  id: string;
-  title: string;
-  subtitle: string;
-  image?: string;
-  type: 'playlist' | 'album' | 'artist' | 'track';
-  href: string;
-  metadata?: {
-    duration?: string;
-    owner?: string;
-    trackCount?: number;
-  };
-}
-
-const featuredContent: FeaturedItem[] = [
-  {
-    id: 'discover-weekly',
-    title: 'Descubrimiento semanal',
-    subtitle: 'Tu mezcla personalizada',
-    image: undefined,
-    type: 'playlist',
-    href: '/playlists/discover-weekly',
-    metadata: { trackCount: 30, duration: '2h 15m' },
-  },
-  {
-    id: 'release-radar',
-    title: 'Radar de novedades',
-    subtitle: 'Nuevas canciones para ti',
-    image: undefined,
-    type: 'playlist',
-    href: '/playlists/release-radar',
-    metadata: { trackCount: 50, duration: '3h 30m' },
-  },
-  {
-    id: 'daily-mix-1',
-    title: 'Mix diario 1',
-    subtitle: 'Basado en tus gustos',
-    image: undefined,
-    type: 'playlist',
-    href: '/playlists/daily-mix-1',
-    metadata: { trackCount: 50, duration: '3h' },
-  },
-];
+import { usePlayerStore } from '@/stores/playerStore';
 
 const quickLinks = [
-  { icon: Compass, label: 'Explorar', href: '/explore', color: 'from-violet-700 to-fuchsia-600' },
-  { icon: Zap, label: 'Hecho para ti', href: '/made-for-you', color: 'from-purple-700 to-fuchsia-500' },
-  { icon: Clock, label: 'Recién reproducidos', href: '/recently-played', color: 'from-violet-800 to-purple-600' },
-  { icon: Users, label: 'Top artistas', href: '/top-artists', color: 'from-fuchsia-700 to-violet-600' },
+  { icon: Compass, label: 'Explorar', href: '/search', color: 'from-violet-700 to-fuchsia-600' },
+  { icon: Zap, label: 'Hecho para ti', href: '/#made-for-you', color: 'from-purple-700 to-fuchsia-500' },
+  { icon: Clock, label: 'Recién reproducidos', href: '/#recently-played', color: 'from-violet-800 to-purple-600' },
+  { icon: Users, label: 'Top artistas', href: '/library/artists', color: 'from-fuchsia-700 to-violet-600' },
 ];
 
 export function Home() {
+  const location = useLocation();
   const { tracks } = useLibraryStore();
   const { isAuthenticated, checkAuth } = useAuthStore();
-  const [featured] = useState<FeaturedItem[]>(featuredContent);
   const [recentlyPlayed, setRecentlyPlayed] = useState<Track[]>([]);
   const [madeForYou, setMadeForYou] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,8 +70,15 @@ export function Home() {
     if (isAuthenticated) checkAuth();
   }, [isAuthenticated, checkAuth]);
 
+  useEffect(() => {
+    if (!location.hash) return;
+    document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView({ behavior: 'smooth' });
+  }, [location.hash]);
+
   const allTracks = [...recentlyPlayed, ...madeForYou, ...tracks.slice(0, 20)];
   const uniqueTracks = allTracks.filter((track, index, self) => index === self.findIndex(t => t.id === track.id));
+  const recommendations = madeForYou.length > 0 ? madeForYou : uniqueTracks.slice(0, 10);
+  const playTrack = (track: Track) => usePlayerStore.getState().play(track);
 
   if (loading) {
     return (
@@ -170,13 +134,13 @@ export function Home() {
                 />
               </>
             )}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#10091a] via-transparent to-[#0b0712]/30" />
+            <div className="home-hero-art-overlay absolute inset-0" />
             <div className="absolute inset-y-0 right-[13%] flex items-center">
               <div className="home-visualizer flex h-32 items-center gap-2 opacity-80">
                 {Array.from({ length: 18 }, (_, index) => <span key={index} />)}
               </div>
             </div>
-            <div className="absolute bottom-7 right-8 max-w-36 text-right text-2xl font-semibold italic leading-tight text-white/90 drop-shadow-[0_0_18px_rgba(176,38,255,0.8)]">
+            <div className="absolute bottom-7 right-8 max-w-36 text-right text-2xl font-semibold italic leading-tight text-text-primary drop-shadow-[0_0_18px_rgba(176,38,255,0.4)]">
               Good vibes
               <br />
               only
@@ -211,7 +175,7 @@ export function Home() {
           </div>
         </section>
 
-        <section aria-label="Reproduce de nuevo">
+        <section id="recently-played" aria-label="Reproduce de nuevo" className="scroll-mt-6">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold tracking-tight">Reproduce de nuevo</h2>
@@ -221,9 +185,8 @@ export function Home() {
           <ScrollArea className="h-64" type="always">
             <div className="flex gap-4 pb-4">
               {recentlyPlayed.slice(0, 10).map((track) => (
-                <Link
+                <div
                   key={track.id}
-                  to={track.source === 'spotify' ? track.url || '#' : `#`}
                   className="flex-shrink-0 w-40 group"
                 >
                   <div className="relative aspect-square overflow-hidden rounded-xl border border-border-default bg-bg-tertiary transition-transform duration-300 group-hover:scale-[1.03]">
@@ -239,7 +202,8 @@ export function Home() {
                         variant="primary"
                         size="icon"
                         className="opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onClick={() => playTrack(track)}
+                        aria-label={`Reproducir ${track.title}`}
                       >
                         <Play className="h-5 w-5" />
                       </Button>
@@ -249,7 +213,7 @@ export function Home() {
                     <p className="text-sm font-medium truncate">{track.title}</p>
                     <p className="text-xs text-text-muted truncate">{track.artist}</p>
                   </div>
-                </Link>
+                </div>
               ))}
               {recentlyPlayed.length === 0 && (
                 <div className="flex items-center justify-center h-full w-full text-text-muted">
@@ -260,51 +224,45 @@ export function Home() {
           </ScrollArea>
         </section>
 
-        <section aria-label="Hecho para ti">
+        <section id="made-for-you" aria-label="Hecho para ti" className="scroll-mt-6">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-xl font-semibold">Hecho para ti</h2>
               <p className="text-sm text-text-muted">Mezclas personalizadas basadas en tu gusto</p>
             </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {featured.map((item) => (
-              <Link
-                key={item.id}
-                to={item.href}
-                className="home-card group relative overflow-hidden rounded-xl border border-border-default p-4"
-              >
+          {recommendations.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {recommendations.slice(0, 8).map((track) => (
+                <div key={`${track.source}:${track.id}`} className="home-card home-feature-card group relative overflow-hidden rounded-xl border border-border-default p-3">
                 <div className="flex items-start gap-4">
                   <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-accent/30 to-accent/10 transition-transform group-hover:scale-105">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Music className="h-8 w-8 text-accent/50" />
-                    </div>
+                    {track.albumArt
+                      ? <img src={track.albumArt} alt="" className="h-full w-full object-cover" />
+                      : <div className="absolute inset-0 flex items-center justify-center"><Music className="h-8 w-8 text-accent/50" /></div>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{item.title}</p>
-                    <p className="text-sm text-text-muted truncate">{item.subtitle}</p>
-                    <div className="mt-2 flex items-center gap-2 text-xs text-text-muted">
-                      {item.metadata?.trackCount && (
-                        <span>{item.metadata.trackCount} canciones</span>
-                      )}
-                      {item.metadata?.duration && (
-                        <span>• {item.metadata.duration}</span>
-                      )}
-                    </div>
+                    <p className="font-medium truncate">{track.title}</p>
+                    <p className="text-sm text-text-muted truncate">{track.artist}</p>
                   </div>
                 </div>
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                   <Button
                     variant="primary"
                     size="icon"
-                    className="opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all"
+                    className="absolute bottom-3 right-3 opacity-0 translate-y-2 transition-all group-hover:translate-y-0 group-hover:opacity-100"
+                    onClick={() => playTrack(track)}
+                    aria-label={`Reproducir ${track.title}`}
                   >
                     <Play className="h-5 w-5" />
                   </Button>
                 </div>
-              </Link>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-border-default bg-surface p-5 text-sm text-text-muted">
+              Conecta Spotify o añade canciones a tu biblioteca para recibir recomendaciones aquí.
+            </div>
+          )}
         </section>
 
         <section aria-label="Tus canciones">
@@ -325,6 +283,15 @@ export function Home() {
                   'flex items-center gap-4 rounded-xl p-2 hover:bg-bg-hover transition-colors cursor-pointer',
                   'group'
                 )}
+                role="button"
+                tabIndex={0}
+                onClick={() => playTrack(track)}
+                onKeyDown={event => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    playTrack(track);
+                  }
+                }}
               >
                 <span className="w-8 text-center text-xs text-text-muted">{index + 1}</span>
                 {track.albumArt ? (

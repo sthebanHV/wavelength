@@ -474,7 +474,7 @@
     height: 15px;
     align-items: center;
     gap: 2px;
-    color: #d687ff;
+    color: var(--accent-hover);
   }
 
   .player-waveform i {
@@ -501,8 +501,31 @@
     animation: player-pulse 1.8s ease-in-out infinite;
   }
 
+  .player-cover-art[data-playing='true'] {
+    animation: player-cover-pulse 2.4s ease-in-out infinite;
+  }
+
+  .player-progress-track {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+
+  .player-progress-value {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+    box-shadow: 0 0 10px var(--accent-glow);
+    transition: width 220ms linear;
+  }
+
+  .home-feature-card {
+    background: linear-gradient(145deg, color-mix(in srgb, var(--surface-elevated) 90%, transparent), var(--surface));
+  }
+
   .home-card {
-    background: linear-gradient(145deg, rgb(22 14 33 / 90%), rgb(11 9 17 / 96%));
     transition:
       transform 220ms ease,
       border-color 220ms ease,
@@ -511,7 +534,42 @@
 
   .home-card:hover {
     transform: translateY(-4px);
-    border-color: rgb(176 38 255 / 55%);
-    box-shadow: 0 16px 38px rgb(97 24 148 / 16%);
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--border-default));
+    box-shadow: 0 16px 38px color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+
+  .light .home-feature-card {
+    background: linear-gradient(145deg, #fff, #f5f1ff);
+  }
+
+  .light .home-hero {
+    background:
+      radial-gradient(ellipse at 78% 48%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 38%),
+      linear-gradient(110deg, #fff 0%, #f5efff 53%, #f4f4fb 100%);
+  }
+
+  .light .home-hero-art {
+    background:
+      radial-gradient(ellipse at 65% 45%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 38%),
+      radial-gradient(ellipse at 76% 80%, #d7c4f2, transparent 45%),
+      linear-gradient(145deg, #f5f0fb, #ebe3f6 55%, #f7f6fb);
+  }
+
+  .home-hero-art-overlay {
+    background: linear-gradient(90deg, #10091a 0%, rgb(16 9 26 / 5%) 55%, rgb(11 7 18 / 30%) 100%);
+  }
+
+  .light .home-hero-art-overlay {
+    background: linear-gradient(90deg, #f5f0fb 0%, rgb(245 240 251 / 5%) 55%, rgb(247 246 251 / 30%) 100%);
+  }
+}
+
+@keyframes player-cover-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
   }
 }
