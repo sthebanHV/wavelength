@@ -81,8 +81,11 @@ export const useAuthStore = create<AuthState>()(
             set({ error: 'Authentication failed', isLoading: false });
             return false;
           }
-        } catch {
-          set({ error: 'Authentication failed', isLoading: false });
+        } catch (error) {
+          set({
+            error: error instanceof Error ? error.message : 'No se pudo completar el inicio de sesión con Spotify.',
+            isLoading: false,
+          });
           return false;
         }
       },

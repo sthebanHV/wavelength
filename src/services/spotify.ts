@@ -225,42 +225,59 @@ export const spotifyService = {
 
   async handleCallback(code: string, state: string): Promise<boolean> {
     const stored = localStorage.getItem(STORAGE_KEYS.SPOTIFY_AUTH_TRANSACTION);
-    if (!stored) return false;
-
-    const { codeVerifier, state: storedState } = JSON.parse(stored);
-    if (state !== storedState) return false;
-
-    try {
-      const response = await fetch(SPOTIFY_CONFIG.TOKEN_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          client_id: SPOTIFY_CONFIG.CLIENT_ID,
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: SPOTIFY_CONFIG.REDIRECT_URI,
-          code_verifier: codeVerifier,
-        }),
-      });
-
-      if (!response.ok) return false;
-
-      const data = await response.json();
-      const tokens: Tokens = {
-        accessToken: data.access_token,
-        refreshToken: data.refresh_token,
-        expiresAt: Date.now() + data.expires_in * 1000,
-        tokenType: data.token_type,
-      };
-
-      setStoredTokens(tokens);
-      localStorage.removeItem(STORAGE_KEYS.SPOTIFY_AUTH_TRANSACTION);
-      return true;
-    } catch {
-      return false;
+    if (!stored) {
+      throw new Error('No se encontró la verificación de inicio de sesión. Vuelve a iniciar sesión desde la app.');
     }
+
+    let transaction: { codeVerifier: string; state: string };
+    try {
+      transaction = JSON.parse(stored) as { codeVerifier: string; state: string };
+    } catch {
+      localStorage.removeItem(STORAGE_KEYS.SPOTIFY_AUTH_TRANSACTION);
+      throw new Error('La verificación de inicio de sesión está dañada. Vuelve a iniciar sesión desde la app.');
+    }
+
+    if (state !== transaction.state) {
+      localStorage.removeItem(STORAGE_KEYS.SPOTIFY_AUTH_TRANSACTION);
+      throw new Error('La verificación de seguridad no coincide. Vuelve a iniciar sesión desde la app.');
+    }
+
+    const response = await fetch(SPOTIFY_CONFIG.TOKEN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: SPOTIFY_CONFIG.CLIENT_ID,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: SPOTIFY_CONFIG.REDIRECT_URI,
+        code_verifier: transaction.codeVerifier,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null) as {
+        error?: string | { message?: string };
+        error_description?: string;
+      } | null;
+      const errorMessage = errorData?.error_description
+        || (typeof errorData?.error === 'string' ? errorData.error : errorData?.error?.message)
+        || `HTTP ${response.status}`;
+      throw new Error(`Spotify rechazó el inicio de sesión: ${errorMessage}`);
+    }
+
+    const data = await response.json();
+    const tokens: Tokens = {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      expiresAt: Date.now() + data.expires_in * 1000,
+      tokenType: data.token_type,
+    };
+
+    setStoredTokens(tokens);
+    localStorage.removeItem(STORAGE_KEYS.SPOTIFY_AUTH_TRANSACTION);
+    return true;
   },
 
   isAuthenticated(): boolean {
