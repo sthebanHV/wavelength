@@ -324,20 +324,28 @@ export const spotifyService = {
     return data.items.map(mapSpotifyPlaylist);
   },
 
+  async getAllUserPlaylists(): Promise<Playlist[]> {
+    const playlists: Playlist[] = [];
+    let offset = 0;
+    let page: Playlist[];
+    do {
+      page = await this.getUserPlaylists(50, offset);
+      playlists.push(...page);
+      offset += page.length;
+    } while (page.length === 50);
+    return playlists;
+  },
+
   async getPlaylist(playlistId: string): Promise<Playlist> {
     const data = await spotifyFetch<SpotifyApi.PlaylistObjectFull>(`/playlists/${playlistId}`);
     const playlist = mapSpotifyPlaylist(data);
-    if (data.tracks?.items) {
-      playlist.tracks = data.tracks.items
-        .filter((t): t is SpotifyApi.PlaylistTrackObject => !!t.track && t.track.type === 'track')
-        .map(t => mapSpotifyTrack(t.track as SpotifyApi.TrackObjectFull));
-    }
+    playlist.tracks = await this.getPlaylistTracks(playlistId);
+    playlist.totalTracks = playlist.tracks.length;
     return playlist;
   },
 
   async createPlaylist(input: { name: string; description?: string; isPublic?: boolean }): Promise<Playlist> {
-    const user = await this.getCurrentUser();
-    const data = await spotifyFetch<SpotifyApi.PlaylistObjectFull>(`/users/${user.id}/playlists`, {
+    const data = await spotifyFetch<SpotifyApi.PlaylistObjectFull>('/me/playlists', {
       method: 'POST',
       body: JSON.stringify({
         name: input.name,
@@ -349,26 +357,59 @@ export const spotifyService = {
   },
 
   async addTracksToPlaylist(playlistId: string, trackUris: string[]): Promise<void> {
-    await spotifyFetch(`/playlists/${playlistId}/tracks`, {
+    await spotifyFetch(`/playlists/${playlistId}/items`, {
       method: 'POST',
       body: JSON.stringify({ uris: trackUris }),
     });
   },
 
-  async removeTracksFromPlaylist(playlistId: string, positions: number[]): Promise<void> {
-    await spotifyFetch(`/playlists/${playlistId}/tracks`, {
+  async updatePlaylist(playlistId: string, input: { name: string; description?: string; isPublic?: boolean }): Promise<void> {
+    await spotifyFetch(`/playlists/${playlistId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: input.name,
+        description: input.description || '',
+        public: input.isPublic,
+      }),
+    });
+  },
+
+  async unfollowPlaylist(playlistId: string): Promise<void> {
+    await spotifyFetch(`/playlists/${playlistId}/followers`, { method: 'DELETE' });
+  },
+
+  async removeTracksFromPlaylist(playlistId: string, trackUris: string[]): Promise<void> {
+    await spotifyFetch(`/playlists/${playlistId}/items`, {
       method: 'DELETE',
-      body: JSON.stringify({ tracks: positions.map(p => ({ uri: '', positions: [p] })) }),
+      body: JSON.stringify({ items: trackUris.map(uri => ({ uri })) }),
     });
   },
 
   async getPlaylistTracks(playlistId: string, limit = 100, offset = 0): Promise<Track[]> {
-    const data = await spotifyFetch<SpotifyApi.PlaylistTrackResponse>(
-      `/playlists/${playlistId}/tracks?limit=${limit}&offset=${offset}`
-    );
-    return data.items
-      .filter((t): t is SpotifyApi.PlaylistTrackObject => !!t.track && t.track.type === 'track')
-      .map(t => mapSpotifyTrack(t.track as SpotifyApi.TrackObjectFull));
+    const pageSize = Math.min(Math.max(Math.floor(limit), 1), 100);
+    const tracks: Track[] = [];
+    let currentOffset = offset;
+    let total = Number.POSITIVE_INFINITY;
+    while (currentOffset < total) {
+      const data = await spotifyFetch<{
+        items: { track: SpotifyApi.TrackObjectFull | null }[];
+        total?: number;
+      }>(
+        `/playlists/${playlistId}/items?limit=${pageSize}&offset=${currentOffset}&additional_types=track`
+      );
+      tracks.push(...data.items
+        .filter((item): item is { track: SpotifyApi.TrackObjectFull } => !!item.track)
+        .map(item => mapSpotifyTrack(item.track)));
+      if (data.total === undefined) {
+        if (data.items.length < pageSize) break;
+        currentOffset += data.items.length;
+      } else {
+        total = data.total;
+        currentOffset += data.items.length;
+        if (data.items.length === 0) break;
+      }
+    }
+    return tracks;
   },
 
   async getSavedTracks(limit = 50, offset = 0): Promise<Track[]> {
@@ -376,6 +417,18 @@ export const spotifyService = {
       `/me/tracks?limit=${limit}&offset=${offset}`
     );
     return data.items.map(item => mapSpotifyTrack(item.track));
+  },
+
+  async getAllSavedTracks(): Promise<Track[]> {
+    const tracks: Track[] = [];
+    let offset = 0;
+    let page: Track[];
+    do {
+      page = await this.getSavedTracks(50, offset);
+      tracks.push(...page);
+      offset += page.length;
+    } while (page.length === 50);
+    return tracks;
   },
 
   async saveTracks(trackIds: string[]): Promise<void> {
@@ -461,6 +514,20 @@ export const spotifyService = {
     return mapSpotifyArtist(data);
   },
 
+  async checkFollowingArtists(artistIds: string[]): Promise<boolean[]> {
+    return spotifyFetch<boolean[]>(
+      `/me/following/contains?type=artist&ids=${artistIds.map(encodeURIComponent).join(',')}`
+    );
+  },
+
+  async followArtist(artistId: string): Promise<void> {
+    await spotifyFetch(`/me/following?type=artist&ids=${encodeURIComponent(artistId)}`, { method: 'PUT' });
+  },
+
+  async unfollowArtist(artistId: string): Promise<void> {
+    await spotifyFetch(`/me/following?type=artist&ids=${encodeURIComponent(artistId)}`, { method: 'DELETE' });
+  },
+
   async getArtistTopTracks(artistId: string): Promise<Track[]> {
     const data = await spotifyFetch<SpotifyApi.ArtistsTopTracksResponse>(`/artists/${artistId}/top-tracks?market=from_token`);
     return data.tracks.map(mapSpotifyTrack);
@@ -522,8 +589,9 @@ export const spotifyService = {
     }
   },
 
-  async play(contextUri?: string, uris?: string[], positionMs?: number): Promise<void> {
-    await spotifyFetch('/me/player/play', {
+  async play(contextUri?: string, uris?: string[], positionMs?: number, deviceId?: string): Promise<void> {
+    const endpoint = deviceId ? `/me/player/play?device_id=${encodeURIComponent(deviceId)}` : '/me/player/play';
+    await spotifyFetch(endpoint, {
       method: 'PUT',
       body: JSON.stringify({
         context_uri: contextUri,

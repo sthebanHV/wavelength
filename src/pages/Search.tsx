@@ -13,6 +13,7 @@ import {
   Loader2,
   Filter,
   Play,
+  Heart,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ import { SkeletonTrack, SkeletonAlbum, SkeletonArtist, SkeletonPlaylist } from '
 import { formatDuration, formatDurationLong, formatNumber } from '@/lib/utils';
 import { useLibraryStore } from '@/stores/libraryStore';
 import { usePlayerStore } from '@/stores/playerStore';
+import { useFavoritesStore } from '@/stores/favoritesStore';
 import { spotifyService } from '@/services/spotify';
 import { localFilesService } from '@/services/localFiles';
 import { cn } from '@/lib/utils';
@@ -354,7 +356,7 @@ export function Search() {
                 <ScrollArea className="h-56" type="always">
                   <div className="flex gap-4 pb-4">
                     {combinedResults.artists.slice(0, 8).map((artist) => (
-                      <Link key={artist.id} to="#" className="flex-shrink-0 w-40 group text-center">
+                      <Link key={artist.id} to={`/artists/${artist.id}`} className="flex-shrink-0 w-40 group text-center">
                         <div className="relative aspect-square overflow-hidden rounded-full mx-auto mb-2 bg-bg-tertiary group-hover:scale-105 transition-transform">
                           {artist.image ? (
                             <img src={artist.image} alt={artist.name} className="w-full h-full object-cover" />
@@ -382,7 +384,7 @@ export function Search() {
                 <ScrollArea className="h-56" type="always">
                   <div className="flex gap-4 pb-4">
                     {combinedResults.albums.slice(0, 8).map((album) => (
-                      <Link key={album.id} to="#" className="flex-shrink-0 w-40 group">
+                      <Link key={album.id} to={`/albums/${album.id}`} className="flex-shrink-0 w-40 group">
                         <div className="relative aspect-square overflow-hidden rounded-lg bg-bg-tertiary group-hover:scale-105 transition-transform">
                           {album.coverArt ? (
                             <img src={album.coverArt} alt={album.name} className="w-full h-full object-cover" />
@@ -412,7 +414,7 @@ export function Search() {
                 <ScrollArea className="h-56" type="always">
                   <div className="flex gap-4 pb-4">
                     {combinedResults.playlists.slice(0, 8).map((playlist) => (
-                      <Link key={playlist.id} to="#" className="flex-shrink-0 w-40 group">
+                      <Link key={playlist.id} to={`/playlists/${playlist.id}`} className="flex-shrink-0 w-40 group">
                         <div className="relative aspect-square overflow-hidden rounded-lg bg-bg-tertiary group-hover:scale-105 transition-transform">
                           {playlist.coverArt ? (
                             <img src={playlist.coverArt} alt={playlist.name} className="w-full h-full object-cover" />
@@ -440,6 +442,10 @@ export function Search() {
 }
 
 function TrackRow({ track, index }: { track: Track; index: number }) {
+  const favorites = useFavoritesStore(state => state.tracks);
+  const toggleFavorite = useFavoritesStore(state => state.toggleFavorite);
+  const isFavorite = favorites.some(favorite => favorite.id === track.id && favorite.source === track.source);
+
   return (
     <div className="flex items-center gap-4 rounded-xl p-2 hover:bg-bg-hover transition-colors group">
       <span className="w-8 text-center text-xs text-text-muted">{index}</span>
@@ -465,6 +471,14 @@ function TrackRow({ track, index }: { track: Track; index: number }) {
         aria-label={`Reproducir ${track.title}`}
       >
         <Play className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => { void toggleFavorite(track).catch(() => undefined); }}
+        aria-label={isFavorite ? `Quitar ${track.title} de favoritos` : `Añadir ${track.title} a favoritos`}
+      >
+        <Heart className={`h-4 w-4 ${isFavorite ? 'fill-error text-error' : ''}`} />
       </Button>
     </div>
   );

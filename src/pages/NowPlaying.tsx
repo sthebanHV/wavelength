@@ -33,6 +33,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar } from '@/components/ui/avatar';
 import { formatDuration, formatDurationLong } from '@/lib/utils';
 import { usePlayerStore } from '@/stores/playerStore';
+import { useFavoritesStore } from '@/stores/favoritesStore';
 import { cn } from '@/lib/utils';
 import type { Track } from '@/types';
 
@@ -41,6 +42,8 @@ export function NowPlaying() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [lyrics, setLyrics] = useState<string[]>([]);
   const [activeLyricIndex, setActiveLyricIndex] = useState(-1);
+  const favoriteTracks = useFavoritesStore(state => state.tracks);
+  const toggleFavorite = useFavoritesStore(state => state.toggleFavorite);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const progressRef = useRef<HTMLDivElement>(null);
 
@@ -262,8 +265,15 @@ export function NowPlaying() {
               <div className="flex items-center justify-center gap-4 mt-6">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="text-text-secondary hover:text-error" aria-label="Añadir a favoritos">
-                      <Heart className="h-6 w-6" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-text-secondary hover:text-error"
+                      aria-label={favoriteTracks.some(track => track.id === currentTrack?.id && track.source === currentTrack?.source) ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                      disabled={!currentTrack}
+                      onClick={() => currentTrack && void toggleFavorite(currentTrack).catch(() => undefined)}
+                    >
+                      <Heart className={`h-6 w-6 ${favoriteTracks.some(track => track.id === currentTrack?.id && track.source === currentTrack?.source) ? 'fill-error text-error' : ''}`} />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Favoritos</TooltipContent>

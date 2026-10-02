@@ -71,9 +71,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const spotifyPlayerRef = useRef<SpotifySdkPlayer | null>(null);
   const [spotifyDeviceId, setSpotifyDeviceId] = useState<string | null>(null);
-  const activePlaybackModeRef = useRef<'audio' | 'spotify'>('audio');
+  const activePlaybackModeRef = useRef<'audio' | 'spotify' | 'loading'>('audio');
   const lastSpotifyTrackIdRef = useRef<string | null>(null);
   const lastSpotifyPositionRef = useRef(0);
+  const wasSpotifyPlayingRef = useRef(false);
   const positionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const crossfadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSeekingRef = useRef(false);
@@ -111,7 +112,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
     const handleError = (e: Event) => {
       console.error('Audio error:', e);
-      usePlayerStore.setState({ isPlaying: false });
+      usePlayerStore.setState({
+        isPlaying: false,
+        playbackError: 'No se pudo cargar el audio. Comprueba que el archivo o avance esté disponible.',
+      });
     };
 
     const handleLoadedMetadata = () => {
@@ -205,7 +209,24 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       });
       player.addListener('player_state_changed', state => {
         if (!state) return;
+        const ended = state.paused
+          && wasSpotifyPlayingRef.current
+          && state.duration > 0
+          && state.position >= state.duration - 1500;
+        wasSpotifyPlayingRef.current = !state.paused;
         lastSpotifyPositionRef.current = state.position;
+        if (ended) {
+          const store = usePlayerStore.getState();
+          if (store.repeatMode === 'track') {
+            void player?.seek(0).then(() => player?.resume());
+            usePlayerStore.setState({ isPlaying: true, position: 0 });
+            return;
+          }
+          if (store.getNextTrack()) {
+            store.next();
+            return;
+          }
+        }
         usePlayerStore.setState({
           isPlaying: !state.paused,
           position: state.position,
@@ -261,13 +282,25 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (!track || !audioRef.current) return;
 
     const audio = audioRef.current;
+    activePlaybackModeRef.current = 'loading';
 
     if (track.source === 'local') {
-      activePlaybackModeRef.current = 'audio';
       lastSpotifyTrackIdRef.current = null;
-      const blobUrl = await localFilesService.getFileUrl(track.id);
-      if (blobUrl) {
+      try {
+        const blobUrl = await localFilesService.getFileUrl(track.id);
+        if (!blobUrl) throw new Error('No se encontró el archivo de audio local.');
         audio.src = blobUrl;
+        audio.load();
+        activePlaybackModeRef.current = 'audio';
+        if (usePlayerStore.getState().isPlaying) {
+          await audio.play();
+        }
+      } catch (error) {
+        activePlaybackModeRef.current = 'audio';
+        usePlayerStore.setState({
+          isPlaying: false,
+          playbackError: error instanceof Error ? error.message : 'No se pudo reproducir el archivo local.',
+        });
       }
     } else if (track.source === 'spotify') {
       audio.pause();
@@ -317,6 +350,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       }
       return;
     }
+    if (activePlaybackModeRef.current === 'loading') return;
 
     if (isPlaying) {
       const playPromise = audioRef.current.play();
@@ -358,7 +392,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const playOnDevice = async (track: Track) => {
       try {
         await spotifyService.transferPlayback([deviceId]);
-        await spotifyService.play(undefined, [`spotify:track:${track.id}`]);
+        await spotifyService.play(undefined, [`spotify:track:${track.id}`], undefined, deviceId);
       } catch (error) {
         if (track.previewUrl && audioRef.current) {
           activePlaybackModeRef.current = 'audio';

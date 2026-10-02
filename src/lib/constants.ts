@@ -1,6 +1,12 @@
+const productionSpotifyRedirectUri = 'https://wavelength-reproductor-musica.vercel.app/callback';
+const isVercelDomain = window.location.hostname.endsWith('.vercel.app');
+const configuredRedirectUri = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
+
 export const SPOTIFY_CONFIG = {
   CLIENT_ID: import.meta.env.VITE_SPOTIFY_CLIENT_ID || '',
-  REDIRECT_URI: import.meta.env.VITE_SPOTIFY_REDIRECT_URI || `${window.location.origin}/callback`,
+  REDIRECT_URI: isVercelDomain
+    ? productionSpotifyRedirectUri
+    : configuredRedirectUri || `${window.location.origin}/callback`,
   SCOPES: [
     'user-read-private',
     'user-read-email',

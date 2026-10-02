@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Link, useLocation, NavLink } from 'react-router-dom';
+import { Link, useLocation, NavLink, useNavigate } from 'react-router-dom';
 import {
   Home,
   Library,
@@ -45,6 +45,7 @@ const LIBRARY_SECTIONS = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
 
@@ -118,7 +119,7 @@ export function Sidebar() {
                 variant="ghost"
                 size="sm"
                 className="w-full justify-start gap-3"
-                onClick={() => {}}
+                onClick={() => navigate('/playlists')}
               >
                 <Plus className="h-4 w-4" />
                 <span>Crear lista</span>
@@ -217,7 +218,7 @@ export function Sidebar() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => {}}
+              onClick={() => navigate('/settings')}
               aria-label="Configuración"
             >
               <Settings className="h-5 w-5" />

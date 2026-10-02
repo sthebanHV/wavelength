@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { usePlayerStore } from '@/stores/playerStore';
+import { useFavoritesStore } from '@/stores/favoritesStore';
 
 export function PlayerBar() {
   const {
@@ -40,6 +41,10 @@ export function PlayerBar() {
     setRepeatMode,
     queue,
   } = usePlayerStore();
+  const favoriteTracks = useFavoritesStore(state => state.tracks);
+  const toggleFavorite = useFavoritesStore(state => state.toggleFavorite);
+  const favoriteError = useFavoritesStore(state => state.error);
+  const isFavorite = currentTrack && favoriteTracks.some(track => track.id === currentTrack.id && track.source === currentTrack.source);
 
   const volumeBeforeMute = useRef(0.8);
 
@@ -105,6 +110,7 @@ export function PlayerBar() {
             <p className="text-sm font-medium text-text-primary truncate">{currentTrack?.title || 'Nada reproduciéndose'}</p>
             <p className="text-xs text-text-muted truncate">{currentTrack?.artist || 'Selecciona una canción'}</p>
             {playbackError && <p className="text-[10px] text-error truncate" role="status">{playbackError}</p>}
+            {favoriteError && <p className="text-[10px] text-error truncate" role="alert">{favoriteError}</p>}
           </div>
 
           <Tooltip>
@@ -113,10 +119,11 @@ export function PlayerBar() {
                 variant="ghost"
                 size="icon"
                 className={cn('text-text-secondary hover:text-text-primary', currentTrack && 'text-error/80 hover:text-error')}
-                onClick={() => {}}
-                aria-label="Añadir a favoritos"
+                onClick={() => currentTrack && void toggleFavorite(currentTrack).catch(() => undefined)}
+                aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                disabled={!currentTrack}
               >
-                <Heart className={cn('h-5 w-5 transition-colors', currentTrack && 'fill-error')} />
+                <Heart className={cn('h-5 w-5 transition-colors', isFavorite && 'fill-error text-error')} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Favoritos</TooltipContent>

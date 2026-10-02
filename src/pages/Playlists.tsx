@@ -33,6 +33,8 @@ import { localFilesService } from '@/services/localFiles';
 import { spotifyService } from '@/services/spotify';
 import { cn } from '@/lib/utils';
 import type { Playlist, Track } from '@/types';
+import { usePlayerStore } from '@/stores/playerStore';
+import { useAuthStore } from '@/stores/authStore';
 
 export function Playlists() {
   const { playlists, setPlaylists, addPlaylist, updatePlaylist, removePlaylist } = useLibraryStore();
@@ -46,9 +48,13 @@ export function Playlists() {
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [newPlaylistDescription, setNewPlaylistDescription] = useState('');
   const [newPlaylistPublic, setNewPlaylistPublic] = useState(false);
+  const [createOnSpotify, setCreateOnSpotify] = useState(() => spotifyService.isAuthenticated());
+  const [pageError, setPageError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [playlistQuery, setPlaylistQuery] = useState('');
 
   useEffect(() => {
     loadPlaylists();
@@ -56,33 +62,38 @@ export function Playlists() {
 
   const loadPlaylists = async () => {
     setLoading(true);
-    try {
-      const [local, spotify] = await Promise.all([
-        localFilesService.getAllPlaylists(),
-        spotifyService.isAuthenticated() ? spotifyService.getUserPlaylists(50) : Promise.resolve([]),
-      ]);
-      setLocalPlaylists(local);
-      setSpotifyPlaylists(spotify);
-      setPlaylists([...local, ...spotify]);
-    } catch (error) {
-      console.error('Error loading playlists:', error);
-    } finally {
-      setLoading(false);
+    setPageError(null);
+    const local = await localFilesService.getAllPlaylists();
+    setLocalPlaylists(local);
+    let spotify: Playlist[] = [];
+    if (spotifyService.isAuthenticated()) {
+      try {
+        spotify = await spotifyService.getAllUserPlaylists();
+      } catch (error) {
+        setPageError(error instanceof Error ? error.message : 'No se pudieron cargar tus listas de Spotify.');
+      }
     }
+    setSpotifyPlaylists(spotify);
+    setPlaylists([...local, ...spotify]);
+    setLoading(false);
   };
 
   const handleCreatePlaylist = async () => {
     if (!newPlaylistName.trim()) return;
 
+    setIsSaving(true);
+    setPageError(null);
     try {
       let playlist: Playlist;
-      if (newPlaylistPublic && spotifyService.isAuthenticated()) {
+      if (createOnSpotify && spotifyService.isAuthenticated()) {
         playlist = await spotifyService.createPlaylist({
           name: newPlaylistName,
           description: newPlaylistDescription,
           isPublic: newPlaylistPublic,
         });
         setSpotifyPlaylists(prev => [playlist, ...prev]);
+      } else if (createOnSpotify) {
+        throw new Error('Inicia sesión con Spotify antes de crear una lista allí.');
       } else {
         playlist = await localFilesService.createPlaylist({
           name: newPlaylistName,
@@ -95,8 +106,11 @@ export function Playlists() {
       setNewPlaylistName('');
       setNewPlaylistDescription('');
       setNewPlaylistPublic(false);
+      setCreateOnSpotify(spotifyService.isAuthenticated());
     } catch (error) {
-      console.error('Error creating playlist:', error);
+      setPageError(error instanceof Error ? error.message : 'No se pudo crear la lista.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -106,7 +120,15 @@ export function Playlists() {
     try {
       const updated = { ...editingPlaylist, name: editName, description: editDescription };
       if (editingPlaylist.source === 'spotify') {
-        // Note: Spotify API doesn't support renaming directly, would need different endpoint
+        if (editingPlaylist.ownerId !== useAuthStore.getState().user?.id) {
+          throw new Error('Solo puedes editar las listas de Spotify que creaste.');
+        }
+        await spotifyService.updatePlaylist(editingPlaylist.id, {
+          name: editName,
+          description: editDescription,
+          isPublic: editingPlaylist.isPublic,
+        });
+        setSpotifyPlaylists(prev => prev.map(playlist => playlist.id === editingPlaylist.id ? updated : playlist));
       } else {
         await localFilesService.updatePlaylist(updated);
         setLocalPlaylists(prev => prev.map(p => p.id === editingPlaylist.id ? updated : p));
@@ -116,29 +138,46 @@ export function Playlists() {
       setEditName('');
       setEditDescription('');
     } catch (error) {
-      console.error('Error updating playlist:', error);
+      setPageError(error instanceof Error ? error.message : 'No se pudo actualizar la lista.');
     }
   };
 
   const handleDeletePlaylist = async (playlist: Playlist) => {
-    if (!confirm(`¿Eliminar "${playlist.name}"?`)) return;
+    if (!confirm(`¿Quitar "${playlist.name}" de tu biblioteca?`)) return;
 
     try {
       if (playlist.source === 'spotify') {
-        // Spotify requires different endpoint
+        await spotifyService.unfollowPlaylist(playlist.id);
       } else {
         await localFilesService.deletePlaylist(playlist.id);
         setLocalPlaylists(prev => prev.filter(p => p.id !== playlist.id));
       }
       setPlaylists(prev => prev.filter(p => p.id !== playlist.id));
     } catch (error) {
-      console.error('Error deleting playlist:', error);
+      setPageError(error instanceof Error ? error.message : 'No se pudo quitar la lista.');
+    }
+  };
+
+  const handlePlayPlaylist = async (playlist: Playlist) => {
+    setPageError(null);
+    try {
+      const fullPlaylist = playlist.source === 'spotify'
+        ? await spotifyService.getPlaylist(playlist.id)
+        : await localFilesService.getPlaylist(playlist.id);
+      if (!fullPlaylist?.tracks.length) {
+        setPageError('Esta lista todavía no tiene canciones.');
+        return;
+      }
+      usePlayerStore.getState().playTracks(fullPlaylist.tracks, 'playlist');
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : 'No se pudo reproducir la lista.');
     }
   };
 
   const allPlaylists = [...localPlaylists, ...spotifyPlaylists];
 
   const filteredPlaylists = allPlaylists
+    .filter(p => p.name.toLowerCase().includes(playlistQuery.toLowerCase()))
     .filter(p => filterSource === 'all' || p.source === filterSource)
     .sort((a, b) => {
       switch (sortBy) {
@@ -177,6 +216,7 @@ export function Playlists() {
           <h1 className="text-2xl font-bold">Listas de reproducción</h1>
           <p className="text-sm text-text-muted">{filteredPlaylists.length} listas</p>
         </div>
+
         <div className="flex items-center gap-2">
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
@@ -207,16 +247,30 @@ export function Playlists() {
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
-                    checked={newPlaylistPublic}
-                    onChange={(e) => setNewPlaylistPublic(e.target.checked)}
+                    checked={createOnSpotify}
+                    onChange={(e) => {
+                      setCreateOnSpotify(e.target.checked);
+                      if (!e.target.checked) setNewPlaylistPublic(false);
+                    }}
                     className="rounded border-border-default text-accent focus:ring-accent"
                   />
-                  <span>Hacer pública (Spotify)</span>
+                  <span>Crear en mi cuenta de Spotify</span>
                 </label>
+                {createOnSpotify && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={newPlaylistPublic}
+                      onChange={(e) => setNewPlaylistPublic(e.target.checked)}
+                      className="rounded border-border-default text-accent focus:ring-accent"
+                    />
+                    <span>Hacer pública</span>
+                  </label>
+                )}
               </div>
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setShowCreateDialog(false)}>Cancelar</Button>
-                <Button onClick={handleCreatePlaylist} disabled={!newPlaylistName.trim()}>
+                <Button onClick={handleCreatePlaylist} disabled={!newPlaylistName.trim() || isSaving} loading={isSaving}>
                   Crear lista
                 </Button>
               </DialogFooter>
@@ -224,6 +278,7 @@ export function Playlists() {
           </Dialog>
         </div>
       </div>
+      {pageError && <p className="mb-4 rounded-lg border border-error/30 bg-error/10 p-3 text-sm text-error" role="alert">{pageError}</p>}
 
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <div className="relative flex-1 max-w-md">
@@ -232,9 +287,8 @@ export function Playlists() {
             type="search"
             placeholder="Filtrar listas..."
             className="w-full pl-10 pr-4 py-2 bg-bg-tertiary border border-border-default rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
-            onChange={(e) => {
-              // Filter handled by search in Library page
-            }}
+            value={playlistQuery}
+            onChange={(e) => setPlaylistQuery(e.target.value)}
           />
         </div>
         <div className="flex items-center gap-2">
@@ -297,8 +351,14 @@ export function Playlists() {
               <PlaylistCard
                 key={playlist.id}
                 playlist={playlist}
-                onEdit={setEditingPlaylist}
+                onEdit={(item) => {
+                  setEditingPlaylist(item);
+                  setEditName(item.name);
+                  setEditDescription(item.description || '');
+                }}
                 onDelete={handleDeletePlaylist}
+                onSave={handleUpdatePlaylist}
+                onPlay={handlePlayPlaylist}
                 editName={editName}
                 setEditName={setEditName}
                 editDescription={editDescription}
@@ -326,8 +386,14 @@ export function Playlists() {
                 <PlaylistRow
                   key={playlist.id}
                   playlist={playlist}
-                  onEdit={setEditingPlaylist}
+                  onEdit={(item) => {
+                    setEditingPlaylist(item);
+                    setEditName(item.name);
+                    setEditDescription(item.description || '');
+                  }}
                   onDelete={handleDeletePlaylist}
+                  onSave={handleUpdatePlaylist}
+                  onPlay={handlePlayPlaylist}
                   editingPlaylist={editingPlaylist}
                   setEditingPlaylist={setEditingPlaylist}
                   editName={editName}
@@ -348,6 +414,8 @@ function PlaylistCard({
   playlist,
   onEdit,
   onDelete,
+  onSave,
+  onPlay,
   editingPlaylist,
   setEditingPlaylist,
   editName,
@@ -358,6 +426,8 @@ function PlaylistCard({
   playlist: Playlist;
   onEdit: (p: Playlist) => void;
   onDelete: (p: Playlist) => void;
+  onSave: () => void;
+  onPlay: (p: Playlist) => void;
   editingPlaylist: Playlist | null;
   setEditingPlaylist: (p: Playlist | null) => void;
   editName: string;
@@ -366,6 +436,8 @@ function PlaylistCard({
   setEditDescription: (desc: string) => void;
 }) {
   const isEditing = editingPlaylist?.id === playlist.id;
+  const userId = useAuthStore(state => state.user?.id);
+  const canEdit = playlist.source === 'local' || playlist.ownerId === userId;
 
   return (
     <div className="group relative bg-surface border border-border-default rounded-xl overflow-hidden hover:border-border-strong hover:shadow-lg transition-all">
@@ -378,7 +450,7 @@ function PlaylistCard({
           </div>
         )}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-          <Button variant="primary" size="icon" className="opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all">
+          <Button variant="primary" size="icon" aria-label={`Reproducir ${playlist.name}`} onClick={() => onPlay(playlist)} className="opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all">
             <Play className="h-5 w-5" />
           </Button>
         </div>
@@ -406,13 +478,13 @@ function PlaylistCard({
               placeholder="Descripción"
             />
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => { onEdit(playlist); setEditingPlaylist(null); }}>Guardar</Button>
-              <Button size="sm" variant="ghost" onClick={() => { onEdit(playlist); setEditingPlaylist(null); }}>Cancelar</Button>
+              <Button size="sm" onClick={onSave}>Guardar</Button>
+              <Button size="sm" variant="ghost" onClick={() => setEditingPlaylist(null)}>Cancelar</Button>
             </div>
           </div>
         ) : (
           <>
-            <h3 className="font-medium truncate">{playlist.name}</h3>
+            <Link to={`/playlists/${playlist.id}`} className="block truncate font-medium hover:text-accent">{playlist.name}</Link>
             <p className="text-sm text-text-muted truncate">{playlist.owner || 'Tú'}</p>
             <div className="flex items-center justify-between text-xs text-text-muted">
               <span>{playlist.totalTracks} canciones • {formatDurationLong(playlist.duration)}</span>
@@ -432,11 +504,12 @@ function PlaylistCard({
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{playlist.name}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Reproducir</DropdownMenuItem>
-              <DropdownMenuItem>Añadir a la cola</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onPlay(playlist)}>Reproducir</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onEdit(playlist)}>Editar</DropdownMenuItem>
-              <DropdownMenuItem className="text-error" onClick={() => onDelete(playlist)}>Eliminar</DropdownMenuItem>
+              <DropdownMenuItem disabled={!canEdit} onClick={() => onEdit(playlist)}>Editar</DropdownMenuItem>
+              <DropdownMenuItem className="text-error" onClick={() => onDelete(playlist)}>
+                {playlist.source === 'spotify' ? 'Dejar de seguir' : 'Eliminar'}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -449,6 +522,8 @@ function PlaylistRow({
   playlist,
   onEdit,
   onDelete,
+  onSave,
+  onPlay,
   editingPlaylist,
   setEditingPlaylist,
   editName,
@@ -459,6 +534,8 @@ function PlaylistRow({
   playlist: Playlist;
   onEdit: (p: Playlist) => void;
   onDelete: (p: Playlist) => void;
+  onSave: () => void;
+  onPlay: (p: Playlist) => void;
   editingPlaylist: Playlist | null;
   setEditingPlaylist: (p: Playlist | null) => void;
   editName: string;
@@ -467,6 +544,8 @@ function PlaylistRow({
   setEditDescription: (desc: string) => void;
 }) {
   const isEditing = editingPlaylist?.id === playlist.id;
+  const userId = useAuthStore(state => state.user?.id);
+  const canEdit = playlist.source === 'local' || playlist.ownerId === userId;
 
   return (
     <tr className="border-b border-border-default/50 hover:bg-bg-hover transition-colors">
@@ -489,7 +568,7 @@ function PlaylistRow({
                 autoFocus
               />
             ) : (
-              <p className="font-medium truncate">{playlist.name}</p>
+              <Link to={`/playlists/${playlist.id}`} className="block truncate font-medium hover:text-accent">{playlist.name}</Link>
             )}
             {!isEditing && <p className="text-sm text-text-muted truncate">{playlist.owner || 'Tú'}</p>}
           </div>
@@ -501,20 +580,26 @@ function PlaylistRow({
         {new Date(playlist.createdAt).toLocaleDateString()}
       </td>
       <td className="py-3 w-12 text-right">
-        <DropdownMenu>
+        {isEditing ? (
+          <div className="flex gap-1">
+            <Button size="sm" onClick={onSave}>Guardar</Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditingPlaylist(null)}>Cancelar</Button>
+          </div>
+        ) : <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="text-text-secondary hover:text-text-primary">
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Reproducir</DropdownMenuItem>
-            <DropdownMenuItem>Añadir a la cola</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onPlay(playlist)}>Reproducir</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onEdit(playlist)}>Editar</DropdownMenuItem>
-            <DropdownMenuItem className="text-error" onClick={() => onDelete(playlist)}>Eliminar</DropdownMenuItem>
+            <DropdownMenuItem disabled={!canEdit} onClick={() => onEdit(playlist)}>Editar</DropdownMenuItem>
+            <DropdownMenuItem className="text-error" onClick={() => onDelete(playlist)}>
+              {playlist.source === 'spotify' ? 'Dejar de seguir' : 'Eliminar'}
+            </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu>}
       </td>
     </tr>
   );

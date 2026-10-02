@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Music,
   Square,
@@ -39,8 +39,13 @@ import { localFilesService } from '@/services/localFiles';
 import { spotifyService } from '@/services/spotify';
 import { cn } from '@/lib/utils';
 import type { Track, Album, Artist, Playlist, SortField } from '@/types';
+import { usePlayerStore } from '@/stores/playerStore';
+import { useFavoritesStore } from '@/stores/favoritesStore';
 
 export function Library() {
+  const navigate = useNavigate();
+  const { section } = useParams();
+  const activeSection = ['tracks', 'albums', 'artists', 'playlists'].includes(section || '') ? section! : 'tracks';
   const {
     tracks,
     albums,
@@ -228,7 +233,7 @@ export function Library() {
         </div>
       </div>
 
-      <Tabs defaultValue="tracks" className="flex-1 overflow-hidden">
+      <Tabs value={activeSection} onValueChange={value => navigate(`/library/${value}`)} className="flex-1 overflow-hidden">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="tracks">
             <Music className="h-4 w-4 mr-2" />
@@ -351,9 +356,9 @@ export function Library() {
               <ListMusic className="h-16 w-16 mb-4 text-text-muted/30" />
               <h3 className="text-lg font-medium mb-1">No se encontraron listas</h3>
               <p className="text-sm mb-4">Crea tu primera lista de reproducción</p>
-<Button variant="primary">
-                  <Link to="/playlists/new" className="inherit">Crear lista</Link>
-                </Button>
+<Button asChild variant="primary">
+  <Link to="/playlists">Crear lista</Link>
+</Button>
             </div>
           ) : (
             <ScrollArea className="h-full">
@@ -371,6 +376,9 @@ export function Library() {
 }
 
 function TrackCard({ track, index }: { track: Track; index: number | null }) {
+  const isFavorite = useFavoritesStore(state => state.tracks.some(favorite => favorite.id === track.id && favorite.source === track.source));
+  const toggleFavorite = useFavoritesStore(state => state.toggleFavorite);
+
   return (
     <div className="group relative bg-surface border border-border-default rounded-xl overflow-hidden hover:border-border-strong hover:shadow-lg transition-all">
       <div className="relative aspect-square overflow-hidden bg-bg-tertiary">
@@ -386,6 +394,8 @@ function TrackCard({ track, index }: { track: Track; index: number | null }) {
             variant="primary"
             size="icon"
             className="opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all"
+            aria-label={`Reproducir ${track.title}`}
+            onClick={() => usePlayerStore.getState().play(track)}
           >
             <Play className="h-5 w-5" />
           </Button>
@@ -405,12 +415,23 @@ function TrackCard({ track, index }: { track: Track; index: number | null }) {
             {track.source === 'spotify' ? 'Spotify' : 'Local'}
           </Badge>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full"
+          onClick={() => { void toggleFavorite(track).catch(() => undefined); }}
+        >
+          <Heart className={`mr-2 h-4 w-4 ${isFavorite ? 'fill-error text-error' : ''}`} />
+          {isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+        </Button>
       </div>
     </div>
   );
 }
 
 function TrackRow({ track, index }: { track: Track; index: number }) {
+  const toggleFavorite = useFavoritesStore(state => state.toggleFavorite);
+
   return (
     <tr className="border-b border-border-default/50 hover:bg-bg-hover transition-colors">
       <td className="py-3 text-sm text-text-muted w-10">{index}</td>
@@ -440,10 +461,10 @@ function TrackRow({ track, index }: { track: Track; index: number }) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Reproducir</DropdownMenuItem>
-            <DropdownMenuItem>Añadir a la cola</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => usePlayerStore.getState().play(track)}>Reproducir</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => usePlayerStore.getState().addToQueue(track)}>Añadir a la cola</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Añadir a lista...</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => useFavoritesStore.getState().toggleFavorite(track).catch(() => undefined)}>Añadir/quitar de favoritos</DropdownMenuItem>
             <DropdownMenuSeparator />
             {track.source === 'local' && <DropdownMenuItem className="text-error">Eliminar</DropdownMenuItem>}
           </DropdownMenuContent>

@@ -7,6 +7,7 @@ import { generateId } from '@/lib/utils';
 interface PlayerState extends PlaybackState {
   playbackError: string | null;
   play: (track: Track, context?: { queue?: QueueItem[]; index?: number; source?: QueueItem['source'] }) => void;
+  playTracks: (tracks: Track[], source?: QueueItem['source']) => void;
   pause: () => void;
   togglePlay: () => void;
   next: () => void;
@@ -92,6 +93,20 @@ export const usePlayerStore = create<PlayerState>()(
           isPlaying: true,
           position: 0,
           duration: track.duration,
+          playbackError: null,
+        });
+      },
+
+      playTracks: (tracks, source = 'user') => {
+        if (tracks.length === 0) return;
+        const queue = tracks.map(track => createQueueItem(track, source));
+        set({
+          queue,
+          currentIndex: 0,
+          currentTrack: queue[0].track,
+          isPlaying: true,
+          position: 0,
+          duration: queue[0].track.duration,
           playbackError: null,
         });
       },
