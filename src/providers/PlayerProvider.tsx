@@ -35,6 +35,7 @@ interface SpotifySdkPlayer {
   previousTrack(): Promise<void>;
   seek(position: number): Promise<void>;
   setVolume(volume: number): Promise<void>;
+  getCurrentState(): Promise<SpotifySdkState | null>;
 }
 
 interface SpotifySdk {
@@ -469,6 +470,48 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       }
     };
   }, [advanceAtEnd, isAuthenticated]);
+
+  useEffect(() => {
+    endingSpotifyTrackIdRef.current = null;
+    lastSpotifyPositionRef.current = 0;
+    wasSpotifyPlayingRef.current = false;
+  }, [currentTrack?.id, currentTrack?.source]);
+
+  useEffect(() => {
+    const expectedTrackId = currentTrack?.source === 'spotify' ? currentTrack.id : null;
+    if (!expectedTrackId || !isPlaying) return;
+
+    const interval = setInterval(() => {
+      if (activePlaybackModeRef.current !== 'spotify') return;
+      const player = spotifyPlayerRef.current;
+      if (!player) return;
+
+      void player.getCurrentState().then(state => {
+        const actualTrackId = state?.track_window?.current_track?.id;
+        if (!state || actualTrackId !== expectedTrackId) return;
+
+        const currentState = usePlayerStore.getState();
+        const nearEnd = state.duration > 0
+          && Math.max(state.position, lastSpotifyPositionRef.current) >= state.duration - 500;
+        if (
+          nearEnd
+          && currentState.isPlaying
+          && currentState.currentTrack?.source === 'spotify'
+          && currentState.currentTrack.id === expectedTrackId
+          && endingSpotifyTrackIdRef.current !== expectedTrackId
+        ) {
+          endingSpotifyTrackIdRef.current = expectedTrackId;
+          void advanceAtEnd();
+        }
+      }).catch(error => {
+        usePlayerStore.getState().setPlaybackError(
+          error instanceof Error ? `No se pudo revisar el estado de Spotify: ${error.message}` : 'No se pudo revisar el estado de Spotify.'
+        );
+      });
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [advanceAtEnd, currentTrack, isPlaying]);
 
   const loadTrack = useCallback(async (track: typeof currentTrack) => {
     if (!track || !audioRef.current) return;
