@@ -3,6 +3,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
+  ExternalLink,
   Heart,
   ListMusic,
   Music,
@@ -218,15 +219,23 @@ export function NowPlaying() {
                 <p className="text-xs text-text-muted">Información de la canción</p>
               </div>
             </div>
-            <span className="hidden rounded-full border border-border-default px-3 py-1 text-xs text-text-muted sm:inline-flex">
-              Letra sincronizada no disponible
-            </span>
+            <a
+              href={currentTrack.source === 'spotify' && currentTrack.sourceId
+                ? `https://open.spotify.com/track/${encodeURIComponent(currentTrack.sourceId)}`
+                : `https://open.spotify.com/search/${encodeURIComponent(`${currentTrack.title} ${currentTrack.artist}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-medium text-accent transition-colors hover:bg-accent/20"
+            >
+              Abrir en Spotify
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
           </div>
           <div className="flex flex-1 flex-col justify-center py-6">
             <p className="text-lg font-medium text-text-secondary">{currentTrack.title}</p>
             <p className="mt-1 text-sm text-text-muted">{currentTrack.artist}</p>
             <p className="mt-4 max-w-xl text-sm leading-relaxed text-text-muted">
-              No hay una letra disponible para esta canción. Los controles y el progreso siguen sincronizados con la reproducción.
+              Spotify no permite cargar letras dentro de Wavelength. Abre la canción en Spotify para consultar la letra oficial si está disponible.
             </p>
           </div>
         </section>
