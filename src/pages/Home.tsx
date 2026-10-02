@@ -9,6 +9,8 @@ import {
   Compass,
   Zap,
   Users,
+  ArrowRight,
+  Sparkles,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -67,10 +69,10 @@ const featuredContent: FeaturedItem[] = [
 ];
 
 const quickLinks = [
-  { icon: Compass, label: 'Explorar', href: '/explore', color: 'from-blue-500 to-cyan-500' },
-  { icon: Zap, label: 'Hecho para ti', href: '/made-for-you', color: 'from-purple-500 to-pink-500' },
-  { icon: Clock, label: 'Recién reproducidos', href: '/recently-played', color: 'from-green-500 to-emerald-500' },
-  { icon: Users, label: 'Top artistas', href: '/top-artists', color: 'from-orange-500 to-red-500' },
+  { icon: Compass, label: 'Explorar', href: '/explore', color: 'from-violet-700 to-fuchsia-600' },
+  { icon: Zap, label: 'Hecho para ti', href: '/made-for-you', color: 'from-purple-700 to-fuchsia-500' },
+  { icon: Clock, label: 'Recién reproducidos', href: '/recently-played', color: 'from-violet-800 to-purple-600' },
+  { icon: Users, label: 'Top artistas', href: '/top-artists', color: 'from-fuchsia-700 to-violet-600' },
 ];
 
 export function Home() {
@@ -129,7 +131,54 @@ export function Home() {
 
   return (
     <ScrollArea className="h-full">
-      <div className="space-y-8">
+      <div className="home-dashboard space-y-8 pb-4">
+        <section aria-label="Bienvenido a Wavelength" className="home-hero relative min-h-[250px] overflow-hidden rounded-2xl border border-border-default">
+          <div className="relative z-10 flex min-h-[250px] items-center p-6 sm:p-9 lg:w-[58%] lg:p-10">
+            <div className="max-w-xl">
+              <div className="mb-4 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+                Tu espacio, tu música
+              </div>
+              <h1 className="max-w-lg text-3xl font-bold leading-[1.05] tracking-tight sm:text-4xl lg:text-5xl">
+                La música también es <span className="bg-gradient-to-r from-accent to-[#e0a0ff] bg-clip-text text-transparent">un lugar.</span>
+              </h1>
+              <p className="mt-3 max-w-sm text-sm text-text-secondary sm:text-base">
+                Escucha, siente y encuentra el ritmo que va contigo.
+              </p>
+              <Link
+                to="/search"
+                className="mt-6 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white shadow-[0_0_28px_rgb(176_38_255_/_25%)] transition-all hover:-translate-y-0.5 hover:bg-accent-hover"
+              >
+                <Play className="h-4 w-4 fill-current" aria-hidden="true" />
+                Descubrir música
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </div>
+          </div>
+          <div className="home-hero-art pointer-events-none absolute inset-y-0 right-0 hidden w-[53%] overflow-hidden lg:block" aria-hidden="true">
+            {recentlyPlayed[0]?.albumArt && (
+              <img
+                src={recentlyPlayed[0].albumArt}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover opacity-45 mix-blend-screen"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#10091a] via-transparent to-[#0b0712]/30" />
+            <div className="absolute inset-y-0 right-[13%] flex items-center">
+              <div className="home-visualizer flex h-32 items-center gap-2 opacity-80">
+                {Array.from({ length: 18 }, (_, index) => <span key={index} />)}
+              </div>
+            </div>
+            <div className="absolute bottom-7 right-8 max-w-36 text-right text-2xl font-semibold italic leading-tight text-white/90 drop-shadow-[0_0_18px_rgba(176,38,255,0.8)]">
+              Good vibes
+              <br />
+              only
+            </div>
+          </div>
+          <div className="pointer-events-none absolute -right-12 -top-16 hidden h-64 w-64 rounded-full border border-accent/15 lg:right-[36%] lg:block" aria-hidden="true" />
+          <div className="pointer-events-none absolute -right-4 -top-8 hidden h-48 w-48 rounded-full border border-accent/10 lg:right-[39%] lg:block" aria-hidden="true" />
+        </section>
+
         <section aria-label="Accesos rápidos">
           <div className="flex flex-wrap gap-3">
             {quickLinks.map((link) => (
@@ -137,7 +186,7 @@ export function Home() {
                 key={link.href}
                 to={link.href}
                 className={cn(
-                  'relative flex items-center gap-3 rounded-xl p-4 min-w-[180px] max-w-[200px] flex-1 overflow-hidden transition-all hover:scale-[1.02]',
+                  'home-card relative flex min-w-[150px] max-w-[200px] flex-1 items-center gap-3 overflow-hidden rounded-xl border border-border-default p-3',
                   'bg-gradient-to-br',
                   link.color,
                   'text-white'
@@ -156,9 +205,9 @@ export function Home() {
         </section>
 
         <section aria-label="Reproduce de nuevo">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold">Reproduce de nuevo</h2>
+              <h2 className="text-xl font-semibold tracking-tight">Reproduce de nuevo</h2>
               <p className="text-sm text-text-muted">Vuelve a donde lo dejaste</p>
             </div>
           </div>
@@ -170,7 +219,7 @@ export function Home() {
                   to={track.source === 'spotify' ? track.url || '#' : `#`}
                   className="flex-shrink-0 w-40 group"
                 >
-                  <div className="relative aspect-square rounded-lg overflow-hidden bg-bg-tertiary group-hover:scale-105 transition-transform duration-200">
+                  <div className="relative aspect-square overflow-hidden rounded-xl border border-border-default bg-bg-tertiary transition-transform duration-300 group-hover:scale-[1.03]">
                     {track.albumArt ? (
                       <img src={track.albumArt} alt={track.title} className="w-full h-full object-cover" />
                     ) : (
@@ -216,10 +265,10 @@ export function Home() {
               <Link
                 key={item.id}
                 to={item.href}
-                className="group relative overflow-hidden rounded-xl bg-surface border border-border-default p-4 hover:border-border-strong hover:shadow-lg transition-all"
+                className="home-card group relative overflow-hidden rounded-xl border border-border-default p-4"
               >
                 <div className="flex items-start gap-4">
-                  <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-gradient-to-br from-accent/30 to-accent/10 flex-shrink-0 group-hover:scale-105 transition-transform">
+                  <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-accent/30 to-accent/10 transition-transform group-hover:scale-105">
                     <div className="absolute inset-0 flex items-center justify-center">
                       <Music className="h-8 w-8 text-accent/50" />
                     </div>

@@ -31,7 +31,7 @@ export function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 h-16 bg-bg-secondary/80 backdrop-blur-xl border-b border-border-default flex items-center gap-4 px-4 md:px-6">
+    <header className="fixed left-0 right-0 top-0 z-30 flex h-16 items-center gap-4 border-b border-[#21172e] bg-[#08060d]/90 px-4 backdrop-blur-xl md:px-6">
       <Button
         variant="ghost"
         size="icon"
@@ -51,7 +51,7 @@ export function Header() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar canciones, artistas, álbumes..."
-            className="w-full pl-10 pr-10 py-2 bg-bg-tertiary border border-border-default rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
+            className="w-full rounded-full border border-[#30203f] bg-[#0e0a16] py-2 pl-10 pr-10 text-text-primary placeholder-text-muted transition-all focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/30"
             autoFocus={showSearch}
           />
           {searchQuery && (

@@ -52,14 +52,14 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-full bg-surface border-r border-border-default transition-all duration-300 flex flex-col',
+        'fixed left-0 top-0 z-40 flex h-full flex-col border-r border-[#21172e] bg-[#08060d] shadow-[8px_0_30px_rgba(0,0,0,0.18)] transition-all duration-300',
         collapsed ? 'w-20' : 'w-64'
       )}
     >
       <div className="flex h-16 items-center justify-between px-4 border-b border-border-default">
         {!collapsed && (
           <Link to="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-hover text-lg font-bold text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#d34aff] to-accent text-lg font-bold text-white shadow-[0_0_22px_rgba(176,38,255,0.32)]">
               W
             </div>
             <span className="font-semibold text-lg">Wavelength</span>
@@ -85,10 +85,10 @@ export function Sidebar() {
                 key={item.path}
                 to={item.path}
                 className={({ isActive: active }) => cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
                   'group relative overflow-hidden',
                   active
-                    ? 'bg-accent/10 text-accent'
+                    ? 'bg-gradient-to-r from-accent/20 to-accent/5 text-[#db9aff] shadow-[inset_2px_0_0_#b026ff,0_0_18px_rgba(176,38,255,0.08)]'
                     : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover',
                   collapsed && 'justify-center px-0'
                 )}
@@ -131,7 +131,7 @@ export function Sidebar() {
                   key={item.path}
                   to={item.path}
                   className={({ isActive: active }) => cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors',
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                     active
                       ? 'bg-accent/10 text-accent'
                       : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover'
@@ -153,7 +153,7 @@ export function Sidebar() {
                   <NavLink
                     to="/spotify/playlists"
                     className={({ isActive: active }) => cn(
-                      'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors',
+                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                       active ? 'bg-accent/10 text-accent' : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover'
                     )}
                   >
@@ -163,7 +163,7 @@ export function Sidebar() {
                   <NavLink
                     to="/spotify/liked"
                     className={({ isActive: active }) => cn(
-                      'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors',
+                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                       active ? 'bg-accent/10 text-accent' : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover'
                     )}
                   >
@@ -173,7 +173,7 @@ export function Sidebar() {
                   <NavLink
                     to="/spotify/top"
                     className={({ isActive: active }) => cn(
-                      'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors',
+                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                       active ? 'bg-accent/10 text-accent' : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover'
                     )}
                   >
@@ -190,7 +190,7 @@ export function Sidebar() {
       <div className="p-3 border-t border-border-default">
         {!collapsed && (
           <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-hover text-sm font-bold text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#d34aff] to-accent text-sm font-bold text-white shadow-[0_0_16px_rgba(176,38,255,0.24)]">
               U
             </div>
             <div className="flex-1 min-w-0">

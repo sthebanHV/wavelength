@@ -92,14 +92,14 @@ export function PlayerBar() {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-30 h-20 bg-bg-secondary/95 backdrop-blur-xl border-t border-border-default">
+    <div className="fixed bottom-0 left-0 right-0 z-30 h-20 border-t border-[#2a1a3c] bg-[#08060d]/95 shadow-[0_-12px_36px_rgba(0,0,0,0.28)] backdrop-blur-xl">
       <div className="h-full max-w-screen-2xl mx-auto flex items-center justify-between gap-4 px-4 md:px-6">
         <div className="flex items-center gap-4 min-w-0 flex-1">
           {currentTrack?.albumArt ? (
             <img
               src={currentTrack.albumArt}
               alt={currentTrack.title}
-              className="h-14 w-14 rounded-lg object-cover shadow-lg"
+              className="h-14 w-14 rounded-lg border border-accent/25 object-cover shadow-[0_0_20px_rgba(176,38,255,0.16)]"
             />
           ) : (
             <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-accent to-accent-hover flex items-center justify-center">
