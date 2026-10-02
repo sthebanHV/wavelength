@@ -119,7 +119,7 @@ export function Sidebar() {
                 variant="ghost"
                 size="sm"
                 className="w-full justify-start gap-3"
-                onClick={() => navigate('/playlists')}
+                onClick={() => navigate('/playlists?create=1')}
               >
                 <Plus className="h-4 w-4" />
                 <span>Crear lista</span>

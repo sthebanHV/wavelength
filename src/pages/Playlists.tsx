@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Plus,
   Search,
@@ -38,6 +38,7 @@ import { useAuthStore } from '@/stores/authStore';
 
 export function Playlists() {
   const { playlists, setPlaylists, addPlaylist, updatePlaylist, removePlaylist } = useLibraryStore();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [localPlaylists, setLocalPlaylists] = useState<Playlist[]>([]);
   const [spotifyPlaylists, setSpotifyPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +60,14 @@ export function Playlists() {
   useEffect(() => {
     loadPlaylists();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('create') !== '1') return;
+    setShowCreateDialog(true);
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete('create');
+    setSearchParams(nextSearchParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const loadPlaylists = async () => {
     setLoading(true);
