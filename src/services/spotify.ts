@@ -402,14 +402,16 @@ export const spotifyService = {
     let total = Number.POSITIVE_INFINITY;
     while (currentOffset < total) {
       const data = await spotifyFetch<{
-        items: { track: SpotifyApi.TrackObjectFull | null }[];
+        items: SpotifyApi.PlaylistTrackObject[];
         total?: number;
       }>(
         `/playlists/${playlistId}/items?limit=${pageSize}&offset=${currentOffset}&additional_types=track`
       );
-      tracks.push(...data.items
-        .filter((item): item is { track: SpotifyApi.TrackObjectFull } => !!item.track)
-        .map(item => mapSpotifyTrack(item.track)));
+      const pageTracks = data.items
+        .map(item => item.item ?? item.track)
+        .filter((item): item is SpotifyApi.TrackObjectFull => item?.type === 'track')
+        .map(mapSpotifyTrack);
+      tracks.push(...pageTracks);
       if (data.total === undefined) {
         if (data.items.length < pageSize) break;
         currentOffset += data.items.length;
@@ -765,7 +767,8 @@ declare global {
     }
 
     interface PlaylistTrackObject {
-      track: TrackObjectFull | { type: 'episode' } | null;
+      item?: TrackObjectFull | { type: 'episode' } | null;
+      track?: TrackObjectFull | { type: 'episode' } | null;
       added_at: string;
     }
 
