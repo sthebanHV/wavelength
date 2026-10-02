@@ -79,7 +79,7 @@ export function DialogContent({ className, size = 'md', children, ...props }: Di
       <DialogOverlay />
       <DialogPrimitive.Content
         className={cn(
-          'fixed z-50 grid gap-4 bg-surface border border-border-default rounded-2xl shadow-xl p-6 animate-in slide-in-from-bottom-4 duration-200',
+          'fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto bg-surface border border-border-default rounded-2xl shadow-xl p-6 animate-in slide-in-from-bottom-4 duration-200',
           sizeStyles[size],
           className
         )}
