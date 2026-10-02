@@ -178,13 +178,13 @@ function mapSpotifyPlaylist(item: SpotifyApi.PlaylistObjectSimplified | SpotifyA
     id: item.id,
     name: item.name,
     description: item.description || undefined,
-    coverArt: item.images[0]?.url,
+    coverArt: item.images?.[0]?.url,
     owner: item.owner.display_name,
     ownerId: item.owner.id,
     isPublic: item.public,
     collaborative: item.collaborative,
     tracks: [],
-    totalTracks: item.tracks.total,
+    totalTracks: item.tracks?.total ?? 0,
     duration: 0,
     source: 'spotify',
     sourceId: item.id,
@@ -658,7 +658,7 @@ declare global {
       owner: { id: string; display_name: string };
       public: boolean;
       collaborative: boolean;
-      tracks: { total: number };
+      tracks?: { total?: number };
       followers: { total: number };
       type: 'playlist';
     }
