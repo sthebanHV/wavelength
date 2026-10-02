@@ -219,6 +219,16 @@ export const spotifyService = {
   },
 
   async initiateAuth(): Promise<void> {
+    const productionUrl = new URL(SPOTIFY_CONFIG.REDIRECT_URI);
+    if (window.location.hostname.endsWith('.vercel.app') && window.location.origin !== productionUrl.origin) {
+      const stableAppUrl = new URL(window.location.href);
+      stableAppUrl.protocol = productionUrl.protocol;
+      stableAppUrl.host = productionUrl.host;
+      stableAppUrl.searchParams.set('connectSpotify', '1');
+      window.location.replace(stableAppUrl.toString());
+      return;
+    }
+
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = await generateCodeChallenge(codeVerifier);
     const state = crypto.randomUUID();
