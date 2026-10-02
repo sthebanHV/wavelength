@@ -29,6 +29,7 @@ export const STORAGE_KEYS = {
   THEME: 'wavelength-theme',
   AUTH_TOKENS: 'wavelength-spotify-tokens',
   AUTH_STATE: 'wavelength-auth-state',
+  SPOTIFY_AUTH_TRANSACTION: 'wavelength-spotify-auth-transaction',
   PLAYER_STATE: 'wavelength-player-state',
   LIBRARY_FILTERS: 'wavelength-library-filters',
   QUEUE: 'wavelength-queue',

@@ -207,7 +207,7 @@ export const spotifyService = {
     const codeChallenge = await generateCodeChallenge(codeVerifier);
     const state = crypto.randomUUID();
 
-    localStorage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify({ codeVerifier, state }));
+    localStorage.setItem(STORAGE_KEYS.SPOTIFY_AUTH_TRANSACTION, JSON.stringify({ codeVerifier, state }));
 
     const params = new URLSearchParams({
       client_id: SPOTIFY_CONFIG.CLIENT_ID,
@@ -224,7 +224,7 @@ export const spotifyService = {
   },
 
   async handleCallback(code: string, state: string): Promise<boolean> {
-    const stored = localStorage.getItem(STORAGE_KEYS.AUTH_STATE);
+    const stored = localStorage.getItem(STORAGE_KEYS.SPOTIFY_AUTH_TRANSACTION);
     if (!stored) return false;
 
     const { codeVerifier, state: storedState } = JSON.parse(stored);
@@ -256,7 +256,7 @@ export const spotifyService = {
       };
 
       setStoredTokens(tokens);
-      localStorage.removeItem(STORAGE_KEYS.AUTH_STATE);
+      localStorage.removeItem(STORAGE_KEYS.SPOTIFY_AUTH_TRANSACTION);
       return true;
     } catch {
       return false;
