@@ -106,7 +106,7 @@ export function Search() {
         setSearchError('Conecta tu cuenta de Spotify para buscar en su catálogo.');
         return;
       }
-      setSpotifyResults(await spotifyService.search(searchQuery, ['track', 'album', 'artist', 'playlist'], 20));
+      setSpotifyResults(await spotifyService.search(searchQuery, ['track', 'album', 'artist', 'playlist'], 10));
     } catch (error) {
       console.error('Search error:', error);
       setSpotifyResults(null);

@@ -406,12 +406,13 @@ export const spotifyService = {
 
   async search(query: string, types: string[] = ['track', 'album', 'artist', 'playlist'], limit = 20): Promise<SearchResults> {
     const typeParam = types.join(',');
+    const searchLimit = Math.min(Math.max(Math.floor(limit), 1), 10);
     const data = await spotifyFetch<{
       tracks?: SpotifyApi.TrackSearchResponse;
       albums?: SpotifyApi.AlbumSearchResponse;
       artists?: SpotifyApi.ArtistSearchResponse;
       playlists?: SpotifyApi.PlaylistSearchResponse;
-    }>(`/search?q=${encodeURIComponent(query)}&type=${typeParam}&limit=${limit}`);
+    }>(`/search?q=${encodeURIComponent(query)}&type=${typeParam}&limit=${searchLimit}`);
 
     return {
       tracks: data.tracks?.items.map(mapSpotifyTrack) || [],
