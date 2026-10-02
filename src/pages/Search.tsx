@@ -41,6 +41,8 @@ export function Search() {
   const [showRecent, setShowRecent] = useState(false);
 
   const { tracks: localTracks, albums: localAlbums, artists: localArtists, playlists: localPlaylists } = useLibraryStore();
+  const favoriteTracks = useFavoritesStore(state => state.tracks);
+  const toggleFavorite = useFavoritesStore(state => state.toggleFavorite);
 
   useEffect(() => {
     const stored = localStorage.getItem('wavelength-recent-searches');
@@ -316,8 +318,12 @@ export function Search() {
                 </h2>
                 <ScrollArea className="h-64" type="always">
                   <div className="flex gap-4 pb-4">
-                    {combinedResults.tracks.slice(0, 10).map((track) => (
-                          <div key={track.id} className="flex-shrink-0 w-40 group">
+                    {combinedResults.tracks.slice(0, 10).map(track => {
+                      const isFavorite = favoriteTracks.some(
+                        favorite => favorite.id === track.id && favorite.source === track.source
+                      );
+                      return (
+                        <div key={`${track.source}-${track.id}`} className="flex-shrink-0 w-40 group">
                         <div className="relative aspect-square rounded-lg overflow-hidden bg-bg-tertiary group-hover:scale-105 transition-transform">
                           {track.albumArt ? (
                             <img src={track.albumArt} alt={track.title} className="w-full h-full object-cover" />
@@ -335,13 +341,23 @@ export function Search() {
                           >
                             <Play className="h-5 w-5" />
                           </Button>
+                          <Button
+                            variant="secondary"
+                            size="icon"
+                            className="absolute bottom-2 left-2 rounded-full"
+                            onClick={() => { void toggleFavorite(track).catch(() => undefined); }}
+                            aria-label={isFavorite ? `Quitar ${track.title} de favoritos` : `Añadir ${track.title} a favoritos`}
+                          >
+                            <Heart className={cn('h-4 w-4', isFavorite && 'fill-error text-error')} />
+                          </Button>
                         </div>
                         <div className="mt-2 space-y-1">
                           <p className="text-sm font-medium truncate">{track.title}</p>
                           <p className="text-xs text-text-muted truncate">{track.artist}</p>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </ScrollArea>
               </section>
