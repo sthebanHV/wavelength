@@ -30,6 +30,7 @@ import type { Track, Album, Artist, Playlist, SearchResults } from '@/types';
 export function Search() {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [spotifyResults, setSpotifyResults] = useState<SearchResults | null>(null);
   const [localResults, setLocalResults] = useState<SearchResults>({ tracks: [], albums: [], artists: [], playlists: [] });
@@ -89,25 +90,27 @@ export function Search() {
     if (!searchQuery.trim()) {
       setSpotifyResults(null);
       setLocalResults({ tracks: [], albums: [], artists: [], playlists: [] });
+      setSearchError(null);
       return;
     }
 
     setIsSearching(true);
+    setSearchError(null);
     saveRecentSearch(searchQuery);
     setShowRecent(false);
 
     try {
-      const [spotify, local] = await Promise.all([
-        spotifyService.isAuthenticated()
-          ? spotifyService.search(searchQuery, ['track', 'album', 'artist', 'playlist'], 20)
-          : Promise.resolve({ tracks: [], albums: [], artists: [], playlists: [] }),
-        searchLocal(searchQuery),
-      ]);
-
-      setSpotifyResults(spotify);
-      setLocalResults(local);
+      setLocalResults(await searchLocal(searchQuery));
+      if (!spotifyService.isAuthenticated()) {
+        setSpotifyResults({ tracks: [], albums: [], artists: [], playlists: [] });
+        setSearchError('Conecta tu cuenta de Spotify para buscar en su catálogo.');
+        return;
+      }
+      setSpotifyResults(await spotifyService.search(searchQuery, ['track', 'album', 'artist', 'playlist'], 20));
     } catch (error) {
       console.error('Search error:', error);
+      setSpotifyResults(null);
+      setSearchError(error instanceof Error ? error.message : 'No se pudo completar la búsqueda en Spotify.');
     } finally {
       setIsSearching(false);
     }
@@ -174,6 +177,12 @@ export function Search() {
           </Button>
         </form>
       </div>
+
+      {searchError && (
+        <div role="alert" className="mb-4 rounded-lg border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
+          {searchError}
+        </div>
+      )}
 
       {showRecent && !query && recentSearches.length > 0 && (
         <div className="mb-6">

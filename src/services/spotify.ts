@@ -411,7 +411,7 @@ export const spotifyService = {
       albums?: SpotifyApi.AlbumSearchResponse;
       artists?: SpotifyApi.ArtistSearchResponse;
       playlists?: SpotifyApi.PlaylistSearchResponse;
-    }>(`/search?q=${encodeURIComponent(query)}&type=${typeParam}&limit=${limit}&market=from_token`);
+    }>(`/search?q=${encodeURIComponent(query)}&type=${typeParam}&limit=${limit}`);
 
     return {
       tracks: data.tracks?.items.map(mapSpotifyTrack) || [],
