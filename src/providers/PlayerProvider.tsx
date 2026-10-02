@@ -5,6 +5,7 @@ import { localFilesService } from '@/services/localFiles';
 import { spotifyService } from '@/services/spotify';
 import { useFavoritesStore } from '@/stores/favoritesStore';
 import type { Track } from '@/types';
+import { hasSpotifyTrackEnded } from '@/lib/spotifyPlayback';
 
 interface SpotifySdkTrack {
   id: string;
@@ -82,6 +83,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const wasSpotifyPlayingRef = useRef(false);
   const endingSpotifyTrackIdRef = useRef<string | null>(null);
   const autoplayInProgressRef = useRef<string | null>(null);
+  const spotifyStateRequestPendingRef = useRef(false);
   const positionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const crossfadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSeekingRef = useRef(false);
@@ -484,17 +486,35 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const interval = setInterval(() => {
       if (activePlaybackModeRef.current !== 'spotify') return;
       const player = spotifyPlayerRef.current;
-      if (!player) return;
+      if (!player || spotifyStateRequestPendingRef.current) return;
 
+      spotifyStateRequestPendingRef.current = true;
       void player.getCurrentState().then(state => {
-        const actualTrackId = state?.track_window?.current_track?.id;
-        if (!state || actualTrackId !== expectedTrackId) return;
-
         const currentState = usePlayerStore.getState();
-        const nearEnd = state.duration > 0
-          && Math.max(state.position, lastSpotifyPositionRef.current) >= state.duration - 500;
+        const actualTrackId = state?.track_window?.current_track?.id;
+        if (state && actualTrackId !== expectedTrackId) return;
+        if (state && actualTrackId) {
+          const jumpedBack = state.position < lastSpotifyPositionRef.current - 1500;
+          lastSpotifyPositionRef.current = jumpedBack
+            ? state.position
+            : Math.max(state.position, lastSpotifyPositionRef.current);
+        }
+        const ended = hasSpotifyTrackEnded({
+          expectedTrackId,
+          state: state ? {
+            trackId: actualTrackId,
+            paused: state.paused,
+            position: state.position,
+            duration: state.duration,
+          } : null,
+          lastPosition: lastSpotifyPositionRef.current,
+          fallbackPosition: currentState.position,
+          fallbackDuration: currentState.duration,
+          wasPlaying: wasSpotifyPlayingRef.current,
+          isPlaying: currentState.isPlaying,
+        });
         if (
-          nearEnd
+          ended
           && currentState.isPlaying
           && currentState.currentTrack?.source === 'spotify'
           && currentState.currentTrack.id === expectedTrackId
@@ -507,6 +527,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         usePlayerStore.getState().setPlaybackError(
           error instanceof Error ? `No se pudo revisar el estado de Spotify: ${error.message}` : 'No se pudo revisar el estado de Spotify.'
         );
+      }).finally(() => {
+        spotifyStateRequestPendingRef.current = false;
       });
     }, 250);
 
