@@ -258,7 +258,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       player.addListener('initialization_error', ({ message }) => {
         setSpotifySdkUnavailable(true);
         usePlayerStore.getState().setPlaybackError(
-          message.toLowerCase().includes('keysystem')
+          message.toLowerCase().includes('keysystem') || message.toLowerCase().includes('failed to initialize player')
             ? 'Este navegador no habilitó el DRM que Spotify necesita para reproducir canciones completas. Prueba Chrome o Edge actualizado.'
             : `No se pudo iniciar el reproductor de Spotify: ${message}`
         );
