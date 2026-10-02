@@ -257,7 +257,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       });
       player.addListener('initialization_error', ({ message }) => {
         setSpotifySdkUnavailable(true);
-        usePlayerStore.getState().setPlaybackError(`No se pudo iniciar el reproductor de Spotify: ${message}`);
+        usePlayerStore.getState().setPlaybackError(
+          message.toLowerCase().includes('keysystem')
+            ? 'Este navegador no habilitó el DRM que Spotify necesita para reproducir canciones completas. Prueba Chrome o Edge actualizado.'
+            : `No se pudo iniciar el reproductor de Spotify: ${message}`
+        );
       });
       player.addListener('authentication_error', ({ message }) => {
         setSpotifySdkUnavailable(true);
@@ -414,7 +418,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         if (previewStarted) return;
         activePlaybackModeRef.current = 'loading';
         usePlayerStore.getState().setPlaybackError(
-          'Spotify no pudo iniciar el reproductor completo y esta canción no ofrece avance. Prueba otra canción o revisa si tu cuenta es Premium.'
+          'Spotify no pudo iniciar el reproductor completo y esta canción no ofrece avance. Prueba Chrome o Edge actualizado y verifica que tu cuenta tenga Spotify Premium.'
         );
         usePlayerStore.setState({ isPlaying: false });
       });
