@@ -17,7 +17,7 @@ interface SpotifySdkState {
   paused: boolean;
   position: number;
   duration: number;
-  track_window: { current_track: SpotifySdkTrack };
+  track_window?: { current_track?: SpotifySdkTrack };
 }
 
 interface SpotifySdkPlayer {
@@ -74,6 +74,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [spotifyDeviceId, setSpotifyDeviceId] = useState<string | null>(null);
   const activePlaybackModeRef = useRef<'audio' | 'spotify' | 'loading'>('audio');
   const lastSpotifyTrackIdRef = useRef<string | null>(null);
+  const spotifySdkTrackIdRef = useRef<string | null>(null);
+  const spotifyPlaybackPendingTrackIdRef = useRef<string | null>(null);
   const lastSpotifyPositionRef = useRef(0);
   const wasSpotifyPlayingRef = useRef(false);
   const positionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -231,6 +233,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       });
       player.addListener('player_state_changed', state => {
         if (!state) return;
+        const sdkTrackId = state.track_window?.current_track?.id;
+        const store = usePlayerStore.getState();
+        if (
+          activePlaybackModeRef.current !== 'spotify'
+          || !sdkTrackId
+          || (store.currentTrack?.source === 'spotify' && sdkTrackId !== store.currentTrack.id)
+          || (spotifyPlaybackPendingTrackIdRef.current === sdkTrackId && state.paused)
+        ) {
+          return;
+        }
+        spotifySdkTrackIdRef.current = sdkTrackId;
         const ended = state.paused
           && wasSpotifyPlayingRef.current
           && state.duration > 0
@@ -238,7 +251,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         wasSpotifyPlayingRef.current = !state.paused;
         lastSpotifyPositionRef.current = state.position;
         if (ended) {
-          const store = usePlayerStore.getState();
           if (store.repeatMode === 'track') {
             void player?.seek(0).then(() => player?.resume());
             usePlayerStore.setState({ isPlaying: true, position: 0 });
@@ -368,9 +380,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (!audioRef.current) return;
 
     if (currentTrack?.source === 'spotify') {
-      if (activePlaybackModeRef.current === 'spotify') {
-        if (isPlaying) void spotifyPlayerRef.current?.resume();
-        else void spotifyPlayerRef.current?.pause();
+      if (
+        activePlaybackModeRef.current === 'spotify'
+        && spotifySdkTrackIdRef.current === currentTrack.id
+        && spotifyPlaybackPendingTrackIdRef.current !== currentTrack.id
+      ) {
+        const player = spotifyPlayerRef.current;
+        const operation = isPlaying ? player?.resume() : player?.pause();
+        void operation?.catch(error => {
+          usePlayerStore.getState().setPlaybackError(
+            error instanceof Error ? `No se pudo controlar la reproducción de Spotify: ${error.message}` : 'No se pudo controlar la reproducción de Spotify.'
+          );
+        });
       } else if (audioRef.current.hasAttribute('src')) {
         if (isPlaying) {
           void audioRef.current.play().catch(() => usePlayerStore.setState({ isPlaying: false }));
@@ -436,10 +457,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     audioRef.current?.pause();
 
     const playOnDevice = async (track: Track) => {
+      spotifyPlaybackPendingTrackIdRef.current = track.id;
       try {
         await spotifyService.transferPlayback([deviceId]);
         await spotifyService.play(undefined, [`spotify:track:${track.id}`], undefined, deviceId);
+        spotifyPlaybackPendingTrackIdRef.current = null;
+        if (usePlayerStore.getState().currentTrack?.id === track.id) {
+          usePlayerStore.setState({ isPlaying: true });
+        }
       } catch (error) {
+        spotifyPlaybackPendingTrackIdRef.current = null;
         lastSpotifyTrackIdRef.current = null;
         const previewStarted = await playSpotifyPreview(
           track,
